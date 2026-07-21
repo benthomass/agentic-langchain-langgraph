@@ -1,0 +1,2 @@
+Add-Content -Path .gitignore -Value "`n.env"
+.env
