@@ -22,10 +22,7 @@ os.environ["SSL_CERT_FILE"] = certifi.where()
 os.environ["REQUESTS_CA_BUNDLE"] = certifi.where()
 
 
-embeddings = OllamaEmbeddings(
-    model="nomic-embed-text",
-    show_progress_bar=True,
-)
+embeddings = OllamaEmbeddings(model="nomic-embed-text")
 vectorstore = Chroma(persist_directory="chroma_db", embedding_function=embeddings)
 # vectorstore = PineconeVectorStore(
 #     index_name="langchain-docs-2025", embedding=embeddings
