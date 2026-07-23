@@ -1,28 +1,28 @@
 import os
+from pathlib import Path
+
 from dotenv import load_dotenv
-from langchain_unstructured import UnstructuredLoader
-from langchain_text_splitters import CharacterTextSplitter
+from langchain_community.document_loaders import PyPDFLoader
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.embeddings import OllamaEmbeddings
 from langchain_pinecone import PineconeVectorStore
 
 load_dotenv()
 
+PDF_PATH = Path(__file__).parent / "HuckFinn.pdf"
+
 if __name__ == "__main__":
-    print("Ingesting...")
-    loader = UnstructuredLoader(
-        file_path="/Users/BenThomas/courses/ia/langchain-langgraph/langchain-course/04-rag/mediumblog1.txt",
-        chunking_strategy="basic",
-        max_characters=1000,
-        encoding="UTF-8",
-    )
+    # Only real change vs txt: use PyPDFLoader instead of UnstructuredLoader
+    loader = PyPDFLoader(str(PDF_PATH))
     document = loader.load()
 
     print("Splitting...")
-    text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
+    # Recursive splitter falls back to character splits; keep chunks under
+    # mxbai-embed-large's ~512-token context (CharacterTextSplitter won't).
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
     texts = text_splitter.split_documents(document)
     print(f"created {len(texts)} chunks")
 
-    # Initialize the local Ollama embedding model
     embeddings = OllamaEmbeddings(model="mxbai-embed-large")
 
     print("Ingesting...")
