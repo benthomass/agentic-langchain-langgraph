@@ -1,11 +1,10 @@
 % =============================================================================
-% LangChain Course Resumen / Code Explainer
-% Based on the local project modules 01–05
-% Compile with: pdflatex langchain-resumen.tex  (run twice for TOC)
+% LangChain --- Resumen + Cheat Sheet (módulos 01--05)
+% Compile: pdflatex langchain-resumen.tex  (twice for TOC)
 % =============================================================================
 \documentclass[11pt,a4paper]{article}
 
-\usepackage[margin=2.2cm]{geometry}
+\usepackage[margin=2.0cm]{geometry}
 \usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
 \usepackage{lmodern}
@@ -24,6 +23,7 @@
 \usepackage{amsmath}
 \usepackage{multirow}
 \usepackage{array}
+\usepackage{multicol}
 
 \hypersetup{
   colorlinks=true,
@@ -53,7 +53,6 @@
   tabsize=4,
   columns=fullflexible,
   keepspaces=true,
-  % listings does not handle UTF-8 natively; map Spanish chars
   literate=
     {á}{{\'a}}1 {é}{{\'e}}1 {í}{{\'i}}1 {ó}{{\'o}}1 {ú}{{\'u}}1
     {Á}{{\'A}}1 {É}{{\'E}}1 {Í}{{\'I}}1 {Ó}{{\'O}}1 {Ú}{{\'U}}1
@@ -79,242 +78,300 @@
   colback=gray!6, colframe=gray!50, fonttitle=\bfseries\ttfamily,
   title={Del proyecto}, breakable, #1
 }
+\newtcolorbox{lookup}[1][]{
+  colback=violet!4, colframe=violet!55!black, fonttitle=\bfseries,
+  title={¿No te acuerdas?}, breakable, #1
+}
 
 % --- Header ---
 \pagestyle{fancy}
 \fancyhf{}
-\fancyhead[L]{\small LangChain Course --- Resumen}
+\fancyhead[L]{\small LangChain --- Resumen + Cheat Sheet}
 \fancyhead[R]{\small Modules 01--05}
 \fancyfoot[C]{\thepage}
 \renewcommand{\headrulewidth}{0.4pt}
 
 \title{%
-  \textbf{LangChain --- Resumen \& Code Explainer}\\[0.4em]
-  \large Hoja de estudio a partir del curso local
+  \textbf{LangChain --- Resumen \& Cheat Sheet}\\[0.35em]
+  \large Hoja de estudio y consulta rápida (curso local)
 }
-\author{Basado en \texttt{langchain-course} (módulos 01--05)}
+\author{Basado en \texttt{agentic-langchain} (módulos 01--05) + \texttt{.env} real}
 \date{}
 
 \begin{document}
 \maketitle
 \tableofcontents
-\vspace{1em}
-\noindent\textit{Propósito:} hoja de referencia para recordar cómo funciona LangChain en este proyecto: mensajes, tools, agents, LCEL (\texttt{\textbar}), RAG, Pinecone/Chroma, Tavily, Ollama, API keys y debugging con LangSmith.
+\vspace{0.8em}
+
+\noindent\textit{Propósito:} (1)~repasar el curso LangChain y (2)~consultar en 10\,s qué API / patrón usar cuando no te acuerdas.
+Usa el índice o la tabla ``¿Quiero hacer X?'' (\S\ref{sec:decision}).
 
 % =============================================================================
-\section{Mapa del curso (qué hace cada carpeta)}
+\section{¿Quiero hacer X? (mapa de decisión)}
+\label{sec:decision}
 % =============================================================================
 
 \begin{center}
-\begin{tabular}{@{}clp{8.2cm}@{}}
+\begin{tabular}{@{}p{6.8cm}p{8.5cm}@{}}
 \toprule
-\textbf{Módulo} & \textbf{Carpeta} & \textbf{Idea central} \\
+\textbf{Quiero\ldots} & \textbf{Usa\ldots} \\
 \midrule
-01 & \texttt{01-hello-world} & Setup: \texttt{dotenv}, punto de entrada \\
-02 & \texttt{02-web-search-tool} & Agent + tools + Tavily + output estructurado \\
-03 & \texttt{03-agents-under-the-hood} & ReAct manual vs tool-calling nativo \\
-04 & \texttt{04-rag} & Ingestión + retrieval + LCEL vs imperativo \\
-05 & \texttt{05-building-\ldots} & Crawl docs (Tavily) + RAG agent + Streamlit \\
+Llamar a un LLM una vez & \texttt{llm.invoke([HumanMessage(...)])} \\
+Pipeline fijo (RAG simple) & LCEL: \texttt{retriever | prompt | llm | parser} \\
+Que el LLM elija tools & \texttt{create\_agent} o bucle + \texttt{bind\_tools} \\
+Entender el agent ``por debajo'' & Módulo 03 (ReAct texto vs tool calling) \\
+Buscar en la web & \texttt{TavilySearch} (+ key) o tool custom \\
+Crawlear docs de un sitio & \texttt{TavilyCrawl} \emph{o} Map$\to$Extract \\
+Indexar texto/PDF & Loader $\to$ Splitter $\to$ Embeddings $\to$ VectorStore \\
+Vector DB local & \texttt{Chroma(persist\_directory=...)} \\
+Vector DB cloud & \texttt{PineconeVectorStore} + \texttt{INDEX\_NAME} \\
+Devolver JSON tipado & \texttt{response\_format=PydanticModel} en agent \\
+Ver prompts/tools en UI & LangSmith (\texttt{LANGCHAIN\_TRACING\_V2=true}) \\
+UI de chat & Streamlit + \texttt{st.session\_state.messages} \\
+Citar fuentes en RAG agent & \texttt{@tool(response\_format="content\_and\_artifact")} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+% =============================================================================
+\section{Mapa del curso}
+% =============================================================================
+
+\begin{center}
+\begin{tabular}{@{}clp{8.4cm}@{}}
+\toprule
+\textbf{\#} & \textbf{Carpeta} & \textbf{Idea central} \\
+\midrule
+01 & \texttt{01-hello-world} & \texttt{load\_dotenv()}, punto de entrada \\
+02 & \texttt{02-web-search-tool} & \texttt{create\_agent} + tools + salida Pydantic \\
+03 & \texttt{03-agents-under-the-hood} & ReAct manual (regex) vs tool calling nativo \\
+04 & \texttt{04-rag} & Ingestión + retrieval; LCEL vs imperativo \\
+05 & \texttt{05-building-\ldots} & Tavily crawl $\to$ Chroma + RAG agent + Streamlit \\
 \bottomrule
 \end{tabular}
 \end{center}
 
 \begin{concept}[title=¿Qué es LangChain?]
-LangChain es un \textbf{framework de orquestación} para apps con LLMs.
-No es el modelo: conecta modelos, prompts, tools, retrievers y memoria en \textbf{pipelines} (chains) o \textbf{agents} (bucles que deciden qué tool usar).
+Framework de \textbf{orquestación} para apps con LLMs: conecta modelos, prompts, tools, retrievers y memoria en \textbf{chains} (pasos fijos) o \textbf{agents} (bucle que decide tools).
+No es el modelo en sí.
 \end{concept}
+
+\begin{tip}[title=Cómo correr cosas en este repo]
+Usa \textbf{uv} desde \texttt{agentic-langchain/}:
+\texttt{uv sync} $\cdot$
+\texttt{uv run python 01-hello-world/main.py} $\cdot$
+\texttt{uv run streamlit run 05-building-documentation-assistant/main.py}
+\end{tip}
 
 % =============================================================================
 \section{Setup: entorno, paquetes y API keys}
 % =============================================================================
 
 \subsection{Gestión del proyecto}
-Este repo usa \textbf{uv} + \texttt{pyproject.toml}. Dependencias clave (resumidas):
+\texttt{uv} + \texttt{pyproject.toml}. Dependencias que realmente usas en el código:
 
-\begin{itemize}[leftmargin=*,itemsep=2pt]
-  \item \texttt{langchain}, \texttt{langchain-community}, \texttt{langchain-core} --- núcleo
-  \item \texttt{langchain-ollama}, \texttt{langchain-google-genai}, \texttt{langchain-openai} --- modelos
-  \item \texttt{langchain-pinecone}, \texttt{langchain-chroma} --- vector stores
-  \item \texttt{langchain-tavily}, \texttt{tavily-python} --- search / crawl
-  \item \texttt{langchain-text-splitters}, \texttt{langchain-unstructured} --- chunking / loaders
-  \item \texttt{langsmith} --- tracing / debugging
-  \item \texttt{python-dotenv}, \texttt{streamlit}, \texttt{pydantic}
+\begin{itemize}[leftmargin=*,itemsep=1pt]
+  \item Núcleo: \texttt{langchain}, \texttt{langchain-core}, \texttt{langchain-community}
+  \item Modelos: \texttt{langchain-ollama}, \texttt{langchain-google-genai}
+  \item Vectores: \texttt{langchain-pinecone}, \texttt{langchain-chroma}
+  \item Web: \texttt{langchain-tavily}, \texttt{tavily-python}, \texttt{certifi}
+  \item Docs: \texttt{langchain-text-splitters}, \texttt{langchain-unstructured}, \texttt{pypdf}
+  \item Ops: \texttt{langsmith}, \texttt{python-dotenv}, \texttt{streamlit}, \texttt{pydantic}
 \end{itemize}
 
-\subsection{Variables de entorno (\texttt{.env})}
-Siempre al inicio de los scripts:
+\subsection{Variables de entorno (tu \texttt{.env} real)}
+Siempre al inicio:
 
 \begin{lstlisting}
 from dotenv import load_dotenv
-load_dotenv()  # lee .env y rellena os.environ
+load_dotenv()  # .env -> os.environ
 \end{lstlisting}
 
-Variables típicas en este curso (nombres, \textbf{nunca} valores reales en notas):
+Claves presentes en el \texttt{.env} del proyecto (nombres; \textbf{nunca} pegues valores aquí):
 
 \begin{center}
-\begin{tabular}{@{}llp{6.5cm}@{}}
+\begin{tabular}{@{}llp{6.2cm}@{}}
 \toprule
 \textbf{Variable} & \textbf{Servicio} & \textbf{Para qué} \\
 \midrule
-\texttt{OPENAI\_API\_KEY} & OpenAI & Chat + embeddings cloud \\
-\texttt{GOOGLE\_API\_KEY} & Gemini & \texttt{ChatGoogleGenerativeAI} \\
-\texttt{PINECONE\_API\_KEY} & Pinecone & Vector DB en la nube \\
-\texttt{INDEX\_NAME} & Pinecone & Nombre del índice \\
+\texttt{GOOGLE\_API\_KEY} & Gemini & Chat y/o embeddings Google \\
+\texttt{PINECONE\_API\_KEY} & Pinecone & Vector DB cloud \\
+\texttt{INDEX\_NAME} & Pinecone & Nombre del índice (04-rag) \\
 \texttt{TAVILY\_API\_KEY} & Tavily & Search / Map / Extract / Crawl \\
 \texttt{LANGCHAIN\_API\_KEY} & LangSmith & Tracing \\
-\texttt{LANGCHAIN\_TRACING\_V2} & LangSmith & \texttt{true} activa traces \\
+\texttt{LANGCHAIN\_TRACING\_V2} & LangSmith & \texttt{true} = activar traces \\
 \texttt{LANGCHAIN\_PROJECT} & LangSmith & Nombre del proyecto en UI \\
-\texttt{LANGCHAIN\_ENDPOINT} & LangSmith & API (p.ej. región EU) \\
+\texttt{LANGCHAIN\_ENDPOINT} & LangSmith & API (p.ej.\ región EU) \\
 \bottomrule
 \end{tabular}
 \end{center}
 
-\begin{tip}[title=Modelos locales vs cloud]
-Con \textbf{Ollama} no necesitas API key del LLM: el modelo corre en tu máquina
-(\texttt{ChatOllama}, \texttt{OllamaEmbeddings}).
-Cloud (OpenAI, Gemini) sí requiere key en \texttt{.env}.
-Pinecone y Tavily siempre necesitan sus keys si los usas.
+\begin{tip}[title=Ollama no necesita key del LLM]
+Modelos locales: \texttt{ChatOllama}, \texttt{OllamaEmbeddings}, \texttt{init\_chat\_model("ollama:...")}.
+Pinecone y Tavily sí necesitan key si los usas.
+El README del doc helper menciona \texttt{OPENAI\_API\_KEY}; en \emph{tu} código actual el chat de 05 usa Ollama.
 \end{tip}
 
 \begin{warn}
-Nunca subas \texttt{.env} a git. Las keys dan acceso de facturación.
-Si una key se filtra, rotarla en el dashboard del proveedor.
+Nunca subas \texttt{.env} a git. Si una key se filtra, rotarla.
+En notebooks antiguos a veces hay keys hardcodeadas: bórralas y usa \texttt{.env}.
 \end{warn}
+
+\subsection{SSL con Tavily (05)}
+En Windows/mac a veces fallan certificados HTTPS. El curso fuerza certifi:
+
+\begin{lstlisting}
+import ssl, certifi, os
+ssl_context = ssl.create_default_context(cafile=certifi.where())
+os.environ["SSL_CERT_FILE"] = certifi.where()
+os.environ["REQUESTS_CA_BUNDLE"] = certifi.where()
+\end{lstlisting}
 
 % =============================================================================
 \section{Arquitectura mental: Chain vs Agent}
 % =============================================================================
 
 \begin{center}
-\begin{tabular}{@{}p{7.2cm}p{7.2cm}@{}}
+\begin{tabular}{@{}p{7.4cm}p{7.4cm}@{}}
 \toprule
 \textbf{Chain (pipeline fijo)} & \textbf{Agent (bucle de decisión)} \\
 \midrule
-Pasos definidos por ti:
-\texttt{retrieve $\to$ prompt $\to$ llm $\to$ parse}
-& El LLM elige tools y cuántas veces llamarlas \\
-Ejemplo: RAG con LCEL en \texttt{04-rag/main.py}
-& Ejemplo: \texttt{create\_agent} en 02 y 05;
-bucle manual en 03 \\
-Más predecible y barato
-& Más flexible, más tokens / latencia \\
+Tú fijas los pasos:
+\texttt{retrieve $\to$ prompt $\to$ llm} & El LLM elige tools y cuántas veces \\
+Ej.: RAG LCEL en \texttt{04-rag/main.py} & Ej.: \texttt{create\_agent} (02, 05);
+bucle manual (03) \\
+Más predecible / barato & Más flexible; más tokens / latencia \\
 \bottomrule
 \end{tabular}
 \end{center}
 
-% =============================================================================
-\section{Mensajes: el ``idioma'' de LangChain}
-% =============================================================================
+\begin{lookup}[title=¿Chain o agent?]
+¿Siempre recuperas $k$ docs y respondes? $\to$ \textbf{chain}.
+¿Puede necesitar 0, 1 o N tools / varias queries de retrieval? $\to$ \textbf{agent}.
+\end{lookup}
 
-Los chat models no reciben un string suelto idealmente: reciben una \textbf{lista de mensajes} tipados.
+% =============================================================================
+\section{Mensajes: el idioma de LangChain}
+% =============================================================================
 
 \begin{center}
-\begin{tabular}{@{}llp{7.5cm}@{}}
+\begin{tabular}{@{}llp{7.6cm}@{}}
 \toprule
 \textbf{Clase} & \textbf{Rol} & \textbf{Uso} \\
 \midrule
-\texttt{SystemMessage} & system & Instrucciones / reglas del asistente \\
+\texttt{SystemMessage} & system & Reglas / persona del asistente \\
 \texttt{HumanMessage} & user & Pregunta del usuario \\
-\texttt{AIMessage} & assistant & Respuesta del modelo (puede incluir \texttt{tool\_calls}) \\
-\texttt{ToolMessage} & tool & Resultado de ejecutar una tool (lleva \texttt{tool\_call\_id}) \\
+\texttt{AIMessage} & assistant & Respuesta; puede traer \texttt{tool\_calls} \\
+\texttt{ToolMessage} & tool & Resultado de tool (\textbf{lleva} \texttt{tool\_call\_id}) \\
 \bottomrule
 \end{tabular}
 \end{center}
 
-\begin{fromcode}[title=03-agents-under-the-hood/agent-loop-tool-calling.py]
+\begin{fromcode}[title=03/.../agent-loop-tool-calling.py]
 \begin{lstlisting}
 messages = [
     SystemMessage(content="You are a helpful assistant..."),
     HumanMessage(content=question),
 ]
 ai_message = llm_with_tools.invoke(messages)
-# si hay tool_calls -> ejecutas tool -> append AIMessage + ToolMessage
 messages.append(ai_message)
-messages.append(ToolMessage(content=str(observation),
-                            tool_call_id=tool_call_id))
+messages.append(ToolMessage(
+    content=str(observation), tool_call_id=tool_call_id))
 \end{lstlisting}
 \end{fromcode}
 
-\begin{concept}[title=¿Por qué ToolMessage necesita tool\_call\_id?]
-El modelo puede pedir varias tools. El \texttt{tool\_call\_id} enlaza cada resultado
-con la petición concreta. Sin eso, el historial queda ambiguo.
-\end{concept}
-
-Forma alternativa (dicts), usada en el doc assistant:
+Forma dict (también válida; usada en 05):
 
 \begin{lstlisting}
 messages = [{"role": "user", "content": query}]
 \end{lstlisting}
 
-Ambas son válidas; las clases dan tipado y helpers de LangChain.
+\begin{concept}[title=tool\_call\_id]
+Enlaza cada \texttt{ToolMessage} con la petición concreta en \texttt{AIMessage.tool\_calls}.
+Sin eso el historial queda ambiguo (sobre todo con varias tools).
+\end{concept}
 
 % =============================================================================
 \section{\texttt{invoke}, \texttt{stream}, \texttt{batch}, async}
 % =============================================================================
 
-Casi todo objeto ``Runnable'' en LangChain (LLM, chain, retriever, tool, agent) expone:
+Casi todo ``Runnable'' expone:
 
 \begin{center}
-\begin{tabular}{@{}llp{7.8cm}@{}}
+\begin{tabular}{@{}llp{7.6cm}@{}}
 \toprule
-\textbf{Método} & \textbf{Sync/Async} & \textbf{Significado} \\
+\textbf{Método} & \textbf{Modo} & \textbf{Significado} \\
 \midrule
-\texttt{invoke(input)} & sync & Una entrada $\to$ una salida completa \\
-\texttt{stream(input)} & sync & Tokens / chunks conforme se generan \\
-\texttt{batch([..])} & sync & Varias entradas en paralelo (batch) \\
-\texttt{ainvoke} & async & Igual que invoke, no bloquea el event loop \\
-\texttt{astream} & async & Streaming asíncrono \\
-\texttt{aadd\_documents} & async & Indexar docs en vector store (05) \\
+\texttt{invoke(x)} & sync & Una entrada $\to$ una salida completa \\
+\texttt{stream(x)} & sync & Chunks conforme se generan \\
+\texttt{batch([...])} & sync & Varias entradas en paralelo \\
+\texttt{ainvoke} / \texttt{astream} & async & No bloquean el event loop \\
+\texttt{aadd\_documents} & async & Indexar docs (05 $\to$ Chroma) \\
 \bottomrule
 \end{tabular}
 \end{center}
 
-\begin{tip}
-Si ves \texttt{.invoke(...)}, estás ejecutando un Runnable.
-El \textbf{tipo del input} depende del objeto:
-LLM $\to$ mensajes o string; chain LCEL $\to$ dict (\texttt{\{"question": \ldots\}});
-agent $\to$ \texttt{\{"messages": [\ldots]\}}.
-\end{tip}
-
-% =============================================================================
-\section{Modelos de chat (LLM wrappers)}
-% =============================================================================
-
-\subsection{Formas usadas en el curso}
-
-\begin{lstlisting}
-# Local (Ollama)
-from langchain_ollama import ChatOllama
-llm = ChatOllama(model="qwen3", temperature=0)
-
-# Cloud Gemini
-from langchain_google_genai import ChatGoogleGenerativeAI
-llm = ChatGoogleGenerativeAI(model="gemini-...", temperature=0.2)
-
-# Factory generica (elige provider por prefijo / config)
-from langchain.chat_models import init_chat_model
-llm = init_chat_model("ollama:qwen3:1.7b", temperature=0)
-llm = init_chat_model("gpt-5.2", model_provider="openai")
-\end{lstlisting}
-
-Parámetros importantes:
-\begin{itemize}[leftmargin=*]
-  \item \texttt{temperature}: 0 = más determinista (útil en agents/tools); $>$0 = más creativo.
-  \item El \textbf{nombre del modelo} debe existir en Ollama (\texttt{ollama pull ...}) o en el proveedor cloud.
+\begin{lookup}[title=Shape del input]
+\begin{itemize}[leftmargin=*,itemsep=1pt]
+  \item LLM: lista de mensajes o string
+  \item Chain LCEL RAG: \texttt{\{"question": "..."\}}
+  \item Agent: \texttt{\{"messages": [...]\} }
+  \item Tool: dict de args (\texttt{tool.invoke(\{"product\_name": "laptop"\})})
 \end{itemize}
-
-\subsection{\texttt{bind\_tools}: conectar tools al modelo}
-\begin{lstlisting}
-llm_with_tools = llm.bind_tools(tools)
-ai_message = llm_with_tools.invoke(messages)
-tool_calls = ai_message.tool_calls  # lista de dicts: name, args, id
-\end{lstlisting}
-
-Esto es \textbf{native function calling}: el modelo responde con una estructura de tool call,
-no con texto ``Action: \ldots'' que tú parseas a mano.
+\end{lookup}
 
 % =============================================================================
-\section{Tools: el decorador \texttt{@tool}}
+\section{Modelos usados en \emph{este} repo}
+% =============================================================================
+
+\subsection{Chat}
+\begin{lstlisting}
+from langchain_ollama import ChatOllama
+llm = ChatOllama(model="qwen3", temperature=0)           # 02
+llm = ChatOllama(model="qwen2.5:3b")                     # 04
+
+from langchain.chat_models import init_chat_model
+llm = init_chat_model("ollama:qwen3:1.7b", temperature=0) # 03
+llm = init_chat_model("qwen2.5:3b", model_provider="ollama")  # 05
+
+# Alternativa cloud (comentada en varios archivos)
+# ChatGoogleGenerativeAI(model="gemini-...", temperature=0.2)
+\end{lstlisting}
+
+\subsection{Embeddings (¡mismo modelo en ingest y query!)}
+\begin{center}
+\begin{tabular}{@{}llp{5.8cm}@{}}
+\toprule
+\textbf{Dónde} & \textbf{Modelo} & \textbf{Notas} \\
+\midrule
+04 ingest/main & \texttt{mxbai-embed-large} & Ollama $\to$ Pinecone \\
+04 \texttt{ingest-pdf} & \texttt{gemini-embedding-001} & dim=768 (match índice) \\
+05 ingest/core & \texttt{nomic-embed-text} & Ollama $\to$ Chroma \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{lstlisting}
+from langchain_ollama import OllamaEmbeddings
+# o: from langchain_community.embeddings import OllamaEmbeddings
+embeddings = OllamaEmbeddings(model="mxbai-embed-large")
+
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
+embeddings = GoogleGenerativeAIEmbeddings(
+    model="gemini-embedding-001",
+    output_dimensionality=768,  # debe coincidir con el índice Pinecone
+    google_api_key=os.getenv("GOOGLE_API_KEY"),
+)
+\end{lstlisting}
+
+\begin{warn}
+Si cambias de embedding model / dimensionalidad sin recrear el índice, el retrieval es basura.
+\end{warn}
+
+\texttt{temperature}: 0 = determinista (agents/tools); $>$0 = más creativo.
+
+% =============================================================================
+\section{Tools: \texttt{@tool}}
 % =============================================================================
 
 \begin{lstlisting}
@@ -325,70 +382,79 @@ def get_product_price(product_name: str) -> float:
     """Look up the price of a product in the catalogue.
 
     Args:
-        product_name: The base name of the product ONLY (e.g., 'laptop').
+        product_name: The base name ONLY (e.g. 'laptop').
     """
     return prices.get(product_name, 0)
 \end{lstlisting}
 
 \begin{concept}[title=Qué hace @tool]
-Convierte una función Python en una \textbf{Tool} de LangChain:
-\begin{itemize}[leftmargin=*]
-  \item Nombre = nombre de la función
-  \item Descripción = docstring (el LLM la lee para decidir cuándo usarla)
-  \item Schema de args = type hints (+ Pydantic si hace falta)
-  \item Ejecutable con \texttt{tool.invoke(args\_dict)}
-\end{itemize}
-\textbf{Docstring bueno = tool que el modelo usa bien.} Si el docstring es vago, el agent falla.
+Función Python $\to$ Tool: nombre = función; descripción = \textbf{docstring};
+schema = type hints; ejecutable con \texttt{tool.invoke(args\_dict)}.
+\textbf{Docstring bueno = tool que el modelo usa bien.}
 \end{concept}
 
-Variante avanzada (doc assistant): devolver contenido \emph{y} artefacto:
-
+\subsection{content\_and\_artifact (fuentes para la UI)}
 \begin{lstlisting}
 @tool(response_format="content_and_artifact")
 def retrieve_context(query: str):
     """Retrieve relevant documentation..."""
     docs = vectorstore.as_retriever().invoke(query, k=4)
-    serialized = "..."  # texto para el LLM
-    return serialized, retrieved_docs  # artifact para la UI (fuentes)
+    serialized = "\n\n".join(
+        f"Source: {doc.metadata.get('source')}\n\nContent: {doc.page_content}"
+        for doc in docs)
+    return serialized, docs  # (texto para LLM, artifact para UI)
 \end{lstlisting}
 
-El LLM ve el texto; tu app puede leer \texttt{ToolMessage.artifact} (lista de \texttt{Document}) para citar fuentes.
+En \texttt{run\_llm}: recorre \texttt{response["messages"]}, si es \texttt{ToolMessage} con \texttt{.artifact}, recoge los \texttt{Document}s.
+
+\subsection{bind\_tools}
+\begin{lstlisting}
+llm_with_tools = llm.bind_tools(tools)
+ai = llm_with_tools.invoke(messages)
+# ai.tool_calls -> [{"name", "args", "id"}, ...]
+\end{lstlisting}
+
+Native function calling: estructura tipada, no texto ``Action: \ldots'' parseado a mano.
 
 % =============================================================================
-\section{Agents: tres niveles de abstracción}
+\section{Agents: tres niveles}
 % =============================================================================
 
-\subsection{Nivel A --- ReAct ``a mano'' (prompt + regex)}
-Archivo: \texttt{03-agents-under-the-hood/react-prompt-function-calling.py}
+\subsection{A --- ReAct ``a mano'' (prompt + regex)}
+\texttt{03/.../react-prompt-function-calling.py}
 
-\begin{itemize}[leftmargin=*]
-  \item Prompt estilo ReAct: Thought / Action / Action Input / Observation
-  \item El LLM escribe texto; tú parseas con regex
-  \item Tools son funciones normales (aquí con \texttt{@traceable})
-  \item \texttt{stop=["\textbackslash nObservation"]} fuerza al modelo a parar antes de inventar la observación
+\begin{itemize}[leftmargin=*,itemsep=1pt]
+  \item Prompt Thought / Action / Action Input / Observation / Final Answer
+  \item Tools = funciones normales (+ \texttt{@traceable})
+  \item Parseo con \texttt{regex}; \texttt{stop=["\textbackslash nObservation"]} para que el modelo no invente la Observation
+  \item \textbf{Scratchpad}: se concatena \texttt{output + Observation + Thought:} al prompt
+  \item Descripciones de tools vía \texttt{inspect.signature} + docstring
 \end{itemize}
 
-\begin{tip}[title=Para qué sirve este módulo]
-Entender \textbf{qué hace un agent por debajo}. En producción preferirás native tool calling
-(Nivel B/C), más robusto que parsear texto.
+\begin{tip}
+Útil para \emph{entender} agents. En producción: tool calling nativo (B/C).
 \end{tip}
 
-\subsection{Nivel B --- Agent loop con tool calling nativo}
-Archivo: \texttt{agent-loop-tool-calling.py}
+\subsection{B --- Loop + tool calling nativo}
+\texttt{03/.../agent-loop-tool-calling.py}
 
-Flujo por iteración:
-\begin{enumerate}[leftmargin=*]
+\begin{enumerate}[leftmargin=*,itemsep=1pt]
   \item \texttt{llm\_with\_tools.invoke(messages)}
-  \item Si \textbf{no} hay \texttt{tool\_calls} $\to$ respuesta final
-  \item Si hay $\to$ ejecutar tool $\to$ añadir \texttt{AIMessage} + \texttt{ToolMessage}
-  \item Repetir hasta \texttt{MAX\_ITERATIONS}
+  \item Sin \texttt{tool\_calls} $\to$ respuesta final
+  \item Con $\to$ ejecutar tool $\to$ append \texttt{AIMessage} + \texttt{ToolMessage}
+  \item Hasta \texttt{MAX\_ITERATIONS} (aquí 5)
 \end{enumerate}
 
-En el código del curso se fuerza \textbf{una tool por iteración} (solo \texttt{tool\_calls[0]}),
-para control didáctico del orden: precio $\to$ descuento $\to$ shipping.
+El curso fuerza \textbf{una tool por iteración} (\texttt{tool\_calls[0]}) para controlar el orden: precio $\to$ descuento $\to$ shipping.
 
-\subsection{Nivel C --- \texttt{create\_agent} (API moderna)}
-Archivos: \texttt{02-web-search-tool/web\_search.py}, \texttt{05/\ldots/backend/core.py}
+Reglas críticas van en el \texttt{SystemMessage}: no inventar precios, no calcular a mano, orden fijo, países desconocidos $\to$ \texttt{"Other"}.
+
+Catálogo didáctico: laptop\,999, smartphone\,699, headphones\,199;
+descuento bronze/silver/gold = 5/10/12\,\%;
+shipping USA/Canada/Europe/Other = 5/10/15/20.
+
+\subsection{C --- \texttt{create\_agent} (API moderna)}
+\texttt{02/web\_search.py}, \texttt{05/backend/core.py}
 
 \begin{lstlisting}
 from langchain.agents import create_agent
@@ -396,21 +462,18 @@ from langchain.agents import create_agent
 agent = create_agent(
     model=llm,
     tools=tools,
-    response_format=AgentResponse,  # opcional: salida Pydantic
-    # system_prompt="..."           # en el doc helper
+    response_format=AgentResponse,  # opcional (02)
+    # system_prompt="..."           # 05
 )
-
-result = agent.invoke({
-    "messages": [HumanMessage(content="...")]
-})
+result = agent.invoke({"messages": [HumanMessage(content="...")]})
+# o: {"messages": [{"role": "user", "content": "..."}]}
 \end{lstlisting}
 
 \begin{concept}[title=create\_agent]
-Abstrae el bucle: tool binding, mensajes, iteraciones y (opcional) formato de respuesta.
-Tú defines tools + prompt; LangChain gestiona el loop.
+Abstrae binding, mensajes e iteraciones. Tú: tools + prompt (+ schema).
 \end{concept}
 
-\subsection{Salida estructurada con Pydantic}
+\subsection{Salida estructurada (Pydantic)}
 \begin{lstlisting}
 class Source(BaseModel):
     url: str = Field(description="The URL of the source")
@@ -422,17 +485,18 @@ class AgentResponse(BaseModel):
 agent = create_agent(model=llm, tools=tools, response_format=AgentResponse)
 \end{lstlisting}
 
-El modelo debe devolver JSON conforme al schema --- útil para UIs y APIs tipadas.
+\begin{tip}[title=Nota sobre 02-web-search-tool]
+Se importa \texttt{TavilySearch} pero el agent usa un mock \texttt{search\_online}.
+Para búsqueda real: sustituye la tool por \texttt{TavilySearch()} (necesita \texttt{TAVILY\_API\_KEY}).
+\end{tip}
 
 % =============================================================================
-\section{LCEL y el operador pipe \texttt{|}}
+\section{LCEL y el operador \texttt{|}}
 % =============================================================================
 
-\textbf{LCEL} = LangChain Expression Language.
-Los Runnables se componen con \texttt{|} como un pipeline Unix.
+\textbf{LCEL} = LangChain Expression Language. Runnables compuestos como pipe Unix.
 
-\subsection{Ejemplo del curso (\texttt{04-rag/main.py})}
-
+\begin{fromcode}[title=04-rag/main.py]
 \begin{lstlisting}
 from operator import itemgetter
 from langchain_core.runnables import RunnablePassthrough
@@ -446,278 +510,250 @@ retrieval_chain = (
     | llm
     | StrOutputParser()
 )
-
 answer = retrieval_chain.invoke({"question": query})
 \end{lstlisting}
+\end{fromcode}
 
-Lectura de izquierda a derecha:
-\begin{enumerate}[leftmargin=*]
-  \item Entrada: \texttt{\{"question": "..."\}}
-  \item \texttt{RunnablePassthrough.assign(...)} copia el dict y \textbf{añade} la clave \texttt{context}:
-        \begin{itemize}
-          \item saca \texttt{question} con \texttt{itemgetter}
-          \item la pasa al \texttt{retriever} $\to$ lista de \texttt{Document}
-          \item \texttt{format\_docs} las une en un string
-        \end{itemize}
-  \item \texttt{prompt\_template} rellena \texttt{\{context\}} y \texttt{\{question\}}
-  \item \texttt{llm} genera respuesta
-  \item \texttt{StrOutputParser()} deja solo el string (\texttt{.content})
+Lectura:
+\begin{enumerate}[leftmargin=*,itemsep=1pt]
+  \item Entrada \texttt{\{"question": "..."\}}
+  \item \texttt{assign} copia el dict y añade \texttt{context}:
+        \texttt{question} $\to$ retriever $\to$ docs $\to$ \texttt{format\_docs} (string)
+  \item Prompt rellena \texttt{\{context\}} y \texttt{\{question\}}
+  \item LLM + \texttt{StrOutputParser()} $\to$ string final
 \end{enumerate}
 
-\begin{center}
-\begin{tabular}{@{}p{7.2cm}p{7.2cm}@{}}
-\toprule
-\textbf{Sin LCEL (imperativo)} & \textbf{Con LCEL} \\
-\midrule
-\texttt{docs = retriever.invoke(...)}\\
-\texttt{context = format\_docs(docs)}\\
-\texttt{messages = prompt.format\_...}\\
-\texttt{response = llm.invoke(...)}
-& Una expresión componible;
-\texttt{stream}/\texttt{ainvoke}/\texttt{batch} gratis;
-mejor observabilidad
-\\
-\bottomrule
-\end{tabular}
-\end{center}
+Beneficios vs imperativo: \texttt{stream}/\texttt{ainvoke}/\texttt{batch} gratis, más componible, mejor observabilidad.
 
-\begin{tip}[title=Analogía]
-\texttt{a | b | c} $\approx$ ``pasa la salida de a a b, luego a c''.
-Cada pieza debe ser un Runnable (o función envuelta como tal).
-\end{tip}
-
-Piezas frecuentes de LCEL:
-\begin{itemize}[leftmargin=*]
-  \item \texttt{ChatPromptTemplate.from\_template("... \{var\} ...")}
-  \item \texttt{RunnablePassthrough} / \texttt{.assign(...)}
-  \item \texttt{itemgetter("clave")} --- del módulo \texttt{operator}
-  \item \texttt{StrOutputParser()}
-\end{itemize}
+Piezas frecuentes: \texttt{ChatPromptTemplate.from\_template}, \texttt{RunnablePassthrough.assign}, \texttt{itemgetter}, \texttt{StrOutputParser}.
 
 % =============================================================================
 \section{RAG: Retrieval-Augmented Generation}
 % =============================================================================
 
-\begin{concept}[title=Idea de RAG]
-El LLM no ``sabe'' tus PDFs/docs. RAG:
-\begin{enumerate}[leftmargin=*]
-  \item \textbf{Ingiere} documentos $\to$ chunks $\to$ embeddings $\to$ vector store
-  \item En la pregunta: \textbf{recupera} chunks similares
-  \item Pasa esos chunks como \textbf{contexto} al prompt + pregunta
-  \item El LLM responde \emph{basado en el contexto} (menos alucinación)
-\end{enumerate}
+\begin{concept}[title=Idea]
+Ingesta docs $\to$ chunks $\to$ embeddings $\to$ vector store.
+En query: recupera vecinos $\to$ contexto en el prompt $\to$ LLM responde \emph{basado en eso}.
 \end{concept}
 
-\subsection{Pipeline de ingestión (patrón del curso)}
-
+\subsection{Pipeline de ingestión}
 \begin{center}
-\texttt{Loader} $\to$ \texttt{TextSplitter} $\to$ \texttt{Embeddings} $\to$ \texttt{VectorStore.from\_documents}
+\texttt{Loader} $\to$ \texttt{TextSplitter} $\to$ \texttt{Embeddings} $\to$ \texttt{VectorStore.from\_documents} / \texttt{aadd\_documents}
 \end{center}
 
 \subsubsection{Loaders}
 \begin{lstlisting}
-# Texto / unstructured
 from langchain_unstructured import UnstructuredLoader
-loader = UnstructuredLoader(file_path="...", chunking_strategy="basic")
+loader = UnstructuredLoader(file_path="mediumblog1.txt",
+    chunking_strategy="basic", max_characters=1000, encoding="UTF-8")
 
-# PDF
 from langchain_community.document_loaders import PyPDFLoader
-loader = PyPDFLoader("HuckFinn.pdf")
-docs = loader.load()  # List[Document]
+docs = PyPDFLoader("HuckFinn.pdf").load()  # List[Document]
 \end{lstlisting}
 
-Un \texttt{Document} = \texttt{page\_content} (str) + \texttt{metadata} (dict, p.ej. \texttt{source}, página).
+\texttt{Document} = \texttt{page\_content} + \texttt{metadata} (p.ej.\ \texttt{source}, página).
 
-\subsubsection{Splitters (chunking)}
+\subsubsection{Splitters}
 \begin{lstlisting}
-from langchain_text_splitters import CharacterTextSplitter
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-
-CharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
-RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
-# En docs largas del crawl:
-RecursiveCharacterTextSplitter(chunk_size=4000, chunk_overlap=200)
+CharacterTextSplitter(chunk_size=1000, chunk_overlap=0)          # 04 txt
+RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50) # 04 PDF
+RecursiveCharacterTextSplitter(chunk_size=4000, chunk_overlap=200) # 05 crawl
 \end{lstlisting}
 
-\begin{itemize}[leftmargin=*]
-  \item \texttt{chunk\_size}: tamaño objetivo del trozo
-  \item \texttt{chunk\_overlap}: solape para no cortar ideas a mitad
-  \item \texttt{RecursiveCharacterTextSplitter}: intenta cortar por párrafos/frases (mejor calidad habitual)
+\begin{itemize}[leftmargin=*,itemsep=1pt]
+  \item \texttt{chunk\_size}: tamaño objetivo
+  \item \texttt{chunk\_overlap}: no cortar ideas a mitad
+  \item Recursive: corta por párrafos/frases (mejor calidad habitual)
 \end{itemize}
 
-\subsubsection{Embeddings}
-Convierten texto $\to$ vector numérico (misma ``semántica'' $\approx$ vectores cercanos).
+En 05 a veces aparece \texttt{from langchain\_classic.text\_splitter import RecursiveCharacterTextSplitter}
+(alias de compatibilidad); el concepto es el mismo.
 
-\begin{lstlisting}
-from langchain_ollama import OllamaEmbeddings           # o community
-from langchain_community.embeddings import OllamaEmbeddings
-embeddings = OllamaEmbeddings(model="mxbai-embed-large")
-# tambien: nomic-embed-text, text-embedding-3-small (OpenAI), etc.
-\end{lstlisting}
-
-\begin{warn}
-El modelo de embedding al \textbf{consultar} debe ser el \textbf{mismo} (o compatible)
-que al \textbf{ingestar}. Si no, la similitud no tiene sentido.
-\end{warn}
-
-\subsubsection{Vector stores: Pinecone vs Chroma}
+\subsubsection{Vector stores}
 \begin{center}
-\begin{tabular}{@{}llp{6.8cm}@{}}
+\begin{tabular}{@{}llp{6.6cm}@{}}
 \toprule
  & \textbf{Pinecone} & \textbf{Chroma} \\
 \midrule
 Dónde & Nube & Local (\texttt{persist\_directory}) \\
 Key & \texttt{PINECONE\_API\_KEY} & No \\
-Uso en curso & 04-rag, backend core & 05 \texttt{ingestion.py} \\
-API típica & \texttt{PineconeVectorStore} & \texttt{Chroma(...)} \\
+Curso & 04-rag; opción en 05 & 05 (activo en código) \\
+API & \texttt{PineconeVectorStore} & \texttt{Chroma(...)} \\
+Índice & \texttt{os.environ["INDEX\_NAME"]} & carpeta \texttt{chroma\_db} \\
 \bottomrule
 \end{tabular}
 \end{center}
 
 \begin{lstlisting}
-# Escribir (ingest)
+# Escribir
 PineconeVectorStore.from_documents(texts, embeddings,
                                    index_name=os.environ["INDEX_NAME"])
 
-# Leer (query)
+# Leer
 vectorstore = PineconeVectorStore(index_name=..., embedding=embeddings)
 retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
 docs = retriever.invoke(query)
+
+# 05 local
+vectorstore = Chroma(persist_directory="chroma_db",
+                     embedding_function=embeddings)
 \end{lstlisting}
 
-\texttt{k} = cuántos vecinos más cercanos devolver (más contexto $\neq$ siempre mejor: ruido + tokens).
+\texttt{k} = vecinos a devolver. Más $k$ $\neq$ siempre mejor (ruido + tokens).
 
-\subsubsection{Formatear contexto}
-\begin{lstlisting}
-def format_docs(docs):
-    return "\n\n".join(doc.page_content for doc in docs)
-\end{lstlisting}
+\texttt{05/consts.py}: \texttt{INDEX\_NAME = "langchain-docs-2025"} (nombre sugerido si usas Pinecone en 05; el código activo usa Chroma).
+
+\subsubsection{Batches y rate limits (\texttt{ingest-pdf.py})}
+Google embeddings: lotes de 90 + \texttt{time.sleep(60)} entre batches para no pegar rate limit.
+En 05: \texttt{asyncio.gather} sobre \texttt{aadd\_documents} por batch.
 
 \subsubsection{Prompt RAG típico}
 \begin{lstlisting}
-prompt = ChatPromptTemplate.from_template(
-"""Answer based only on the following context:
+"""Answer the question based only on the following context:
 
 {context}
 
 Question: {question}
 
-Provide a detailed answer:""")
+Provide a detailed answer:"""
 \end{lstlisting}
 
-La frase ``based only on the following context'' reduce inventar hechos fuera del retrieval.
+``based only on the following context'' reduce inventar fuera del retrieval.
 
-\subsection{RAG ``simple'' vs RAG ``agentic''}
+\subsection{RAG simple vs agentic}
 \begin{itemize}[leftmargin=*]
-  \item \textbf{04-rag}: retrieval fijo $\to$ LLM (chain)
-  \item \textbf{05 backend/core.py}: el agent tiene una tool \texttt{retrieve\_context};
-        decide \emph{si} y \emph{con qué query} recuperar --- más flexible
+  \item \textbf{04}: retrieval fijo $\to$ LLM (chain; 3 variantes: raw / sin LCEL / con LCEL)
+  \item \textbf{05}: tool \texttt{retrieve\_context}; el agent decide \emph{si} y \emph{con qué query} recuperar
 \end{itemize}
 
 % =============================================================================
-\section{Tavily: search y crawl para agentes / RAG}
+\section{Tavily: search, map, extract, crawl}
 % =============================================================================
 
-Tavily es una API orientada a LLM apps (resultados limpios, menos HTML basura).
+API orientada a LLM apps (contenido limpio). Requiere \texttt{TAVILY\_API\_KEY}.
 
 \begin{center}
-\begin{tabular}{@{}llp{7cm}@{}}
+\begin{tabular}{@{}llp{6.8cm}@{}}
 \toprule
 \textbf{Clase} & \textbf{Paquete} & \textbf{Rol} \\
 \midrule
-\texttt{TavilySearch} & \texttt{langchain\_tavily} & Búsqueda web (tool de agent) \\
-\texttt{TavilyMap} & idem & Descubre URLs de un sitio (sitemap crawl) \\
-\texttt{TavilyExtract} & idem & Extrae contenido limpio de URLs \\
-\texttt{TavilyCrawl} & idem & Crawl + extract en un paso \\
+\texttt{TavilySearch} & \texttt{langchain\_tavily} & Búsqueda web (tool) \\
+\texttt{TavilyMap} & idem & Descubre URLs (sitemap crawl) \\
+\texttt{TavilyExtract} & idem & Contenido limpio de URLs \\
+\texttt{TavilyCrawl} & idem & Crawl + extract en un paso (AI-guided) \\
 \bottomrule
 \end{tabular}
 \end{center}
 
-Parámetros útiles de Map/Crawl:
-\begin{itemize}[leftmargin=*]
-  \item \texttt{max\_depth}: profundidad de enlaces
-  \item \texttt{max\_breadth}: ramificación por nivel
-  \item \texttt{max\_pages}: tope de páginas
-  \item \texttt{extract\_depth}: p.ej. \texttt{"advanced"}
-\end{itemize}
-
-\begin{fromcode}[title=05 ingestion.py --- crawl $\to$ Documents]
+\subsection{Map $\to$ Extract (notebooks)}
 \begin{lstlisting}
+tavily_map = TavilyMap(max_depth=3, max_breadth=20, max_pages=1000)
+site_map = tavily_map.invoke(demo_url)          # lista de URLs
+
+tavily_extract = TavilyExtract()
+result = await tavily_extract.ainvoke(input={"urls": sample_urls})
+\end{lstlisting}
+
+\subsection{Crawl (ingestion.py + notebook)}
+\begin{lstlisting}
+tavily_crawl = TavilyCrawl()
 res = tavily_crawl.invoke({
     "url": "https://python.langchain.com/",
     "max_depth": 1,
     "extract_depth": "advanced",
+    # "instructions": "Focus on conceptual docs..."  # notebook demo
 })
 for item in res["results"]:
     Document(page_content=item["raw_content"],
              metadata={"source": item["url"]})
 \end{lstlisting}
-\end{fromcode}
 
-Flujo tutorial típico (notebooks):
-\texttt{TavilyMap} (listar URLs) $\to$ \texttt{TavilyExtract} (contenido) $\to$ chunk $\to$ vector store.
-\texttt{TavilyCrawl} acorta ese pipeline.
+Parámetros útiles: \texttt{max\_depth}, \texttt{max\_breadth}, \texttt{max\_pages}, \texttt{extract\_depth}, \texttt{instructions} (guia el crawler).
 
-Requiere \texttt{TAVILY\_API\_KEY} en el entorno.
+\begin{lookup}[title=¿Map+Extract o Crawl?]
+¿Quieres controlar lista de URLs y extraer luego? $\to$ Map + Extract.
+¿Un solo invoke map+contenido? $\to$ Crawl (lo que usa \texttt{ingestion.py}).
+\end{lookup}
 
 % =============================================================================
-\section{Debugging y observabilidad (LangSmith)}
+\section{LangSmith (debugging)}
 % =============================================================================
-
-Con tracing activo, cada \texttt{invoke} aparece en la UI de LangSmith: prompts, tools, latencias, errores.
 
 \begin{lstlisting}
 # .env
 LANGCHAIN_TRACING_V2=true
 LANGCHAIN_API_KEY=...
 LANGCHAIN_PROJECT=mi-proyecto
-LANGCHAIN_ENDPOINT=https://eu.api.smith.langchain.com  # si usas region EU
+LANGCHAIN_ENDPOINT=https://eu.api.smith.langchain.com  # si región EU
 \end{lstlisting}
-
-Marcar funciones concretas:
 
 \begin{lstlisting}
 from langsmith import traceable
 
 @traceable(name="LangChain Agent Loop")
-def run_agent(question: str):
-    ...
+def run_agent(question: str): ...
 
 @traceable(run_type="tool")
-def get_product_price(...):
-    ...
+def get_product_price(...): ...
 
 @traceable(name="Ollama Chat Traced", run_type="llm")
-def ollama_chat_traced(...):
-    ...
+def ollama_chat_traced(...): ...
 \end{lstlisting}
 
-\begin{tip}[title=Cómo depurar un agent]
-\begin{enumerate}[leftmargin=*]
-  \item Mira el trace: ¿llamó la tool correcta? ¿args raros?
-  \item Revisa el \textbf{docstring} de la tool y el \textbf{SystemMessage}
-  \item Baja \texttt{temperature} a 0
-  \item Imprime \texttt{ai\_message.tool\_calls} y las observations (como en módulo 03)
-  \item Limita \texttt{MAX\_ITERATIONS} para no gastar tokens en bucles
-\end{enumerate}
+\begin{tip}[title=Depurar un agent]
+Trace: ¿tool correcta? ¿args raros? $\to$ docstring / SystemMessage $\to$
+\texttt{temperature=0} $\to$ imprime \texttt{tool\_calls} y observations $\to$
+acota \texttt{MAX\_ITERATIONS}.
 \end{tip}
 
 % =============================================================================
-\section{UI: Streamlit en el Documentation Helper}
+\section{Streamlit (Documentation Helper)}
 % =============================================================================
 
-\texttt{05/.../main.py}: chat UI que llama a \texttt{run\_llm} del backend.
+\texttt{05/.../main.py} $\leftrightarrow$ \texttt{backend.core.run\_llm}.
 
-Ideas clave:
-\begin{itemize}[leftmargin=*]
-  \item \texttt{st.session\_state.messages} --- historial entre reruns
-  \item \texttt{st.chat\_input} / \texttt{st.chat\_message} --- UI de chat
-  \item Fuentes desde \texttt{Document.metadata["source"]}
-  \item El backend puede usar Pinecone + OpenAI; la ingestión del curso también muestra Chroma + Ollama
+\begin{itemize}[leftmargin=*,itemsep=1pt]
+  \item \texttt{st.session\_state.messages}: historial entre reruns
+  \item \texttt{st.chat\_input} / \texttt{st.chat\_message}: UI chat
+  \item Fuentes desde \texttt{Document.metadata["source"]} (vía artifact)
+  \item Sidebar: botón Clear chat
+  \item Backend actual: Chroma + Ollama (\texttt{nomic-embed-text} / \texttt{qwen2.5:3b})
 \end{itemize}
 
+Orden operativo 05:
+\begin{enumerate}[leftmargin=*]
+  \item Configura \texttt{.env} (Tavily; Ollama corriendo)
+  \item \texttt{uv run python 05-.../ingestion.py}  (llena \texttt{chroma\_db})
+  \item \texttt{uv run streamlit run 05-.../main.py}
+\end{enumerate}
+
 % =============================================================================
-\section{Glosario rápido (clases y paquetes)}
+\section{Guía archivo por archivo}
+% =============================================================================
+
+\begin{longtable}{@{}p{5.4cm}p{9.8cm}@{}}
+\toprule
+\textbf{Archivo} & \textbf{Qué aprender / recordar} \\
+\midrule
+\endhead
+\texttt{01-hello-world/main.py} & Solo \texttt{load\_dotenv()} + \texttt{main()} \\
+\texttt{02/.../web\_search.py} & \texttt{create\_agent}, \texttt{@tool}, Pydantic \texttt{response\_format}, \texttt{HumanMessage} \\
+\texttt{03/.../react-prompt-...py} & ReAct texto, stop seq, scratchpad, regex, \texttt{@traceable} \\
+\texttt{03/.../agent-loop-...py} & \texttt{init\_chat\_model}, \texttt{bind\_tools}, mensajes System/Human/AI/Tool \\
+\texttt{04-rag/ingestion.py} & UnstructuredLoader $\to$ CharacterSplitter $\to$ Ollama emb $\to$ Pinecone \\
+\texttt{04-rag/ingest-pdf.py} & PyPDF + RecursiveSplitter + Google emb dim=768 + batches + sleep \\
+\texttt{04-rag/main.py} & Raw LLM vs RAG imperativo vs RAG LCEL; \texttt{k=3} \\
+\texttt{05/.../ingestion.py} & SSL/certifi, TavilyCrawl, chunk 4000/200, Chroma async batches \\
+\texttt{05/.../backend/core.py} & Agentic RAG: tool artifact + \texttt{create\_agent} + system\_prompt \\
+\texttt{05/.../main.py} & Streamlit chat + sources expander \\
+\texttt{05/.../consts.py} & Nombre índice Pinecone sugerido \\
+\texttt{05/.../logger.py} & Logs coloreados del pipeline de ingestión \\
+\texttt{05/.../*Tutorial.ipynb} & Map/Extract y Crawl con/sin \texttt{instructions} \\
+\bottomrule
+\end{longtable}
+
+% =============================================================================
+\section{Glosario rápido}
 % =============================================================================
 
 \begin{longtable}{@{}p{4.2cm}p{11cm}@{}}
@@ -725,38 +761,35 @@ Ideas clave:
 \textbf{Nombre} & \textbf{Qué es} \\
 \midrule
 \endhead
-\texttt{langchain} & API de alto nivel (agents, chat\_models helpers) \\
+\texttt{langchain} & API alto nivel (agents, helpers) \\
 \texttt{langchain\_core} & Mensajes, prompts, runnables, parsers, documents \\
 \texttt{langchain\_community} & Integraciones community (loaders, algunos embeddings) \\
-\texttt{ChatOllama} & Chat model local vía Ollama \\
-\texttt{OllamaEmbeddings} & Embeddings locales \\
-\texttt{init\_chat\_model} & Factory ``string $\to$ chat model'' \\
-\texttt{create\_agent} & Construye agent con tools (+ system prompt / schema) \\
-\texttt{@tool} & Decorador función $\to$ Tool \\
+\texttt{ChatOllama} & Chat model local \\
+\texttt{OllamaEmbeddings} / Google... & Texto $\to$ vector \\
+\texttt{init\_chat\_model} & Factory string $\to$ chat model \\
+\texttt{create\_agent} & Agent con tools (+ system prompt / schema) \\
+\texttt{@tool} & Función $\to$ Tool \\
 \texttt{bind\_tools} & Adjunta schemas de tools al LLM \\
-\texttt{HumanMessage} & Mensaje del usuario \\
-\texttt{SystemMessage} & Instrucciones de sistema \\
-\texttt{AIMessage} & Respuesta del modelo (posible \texttt{tool\_calls}) \\
-\texttt{ToolMessage} & Resultado de tool hacia el modelo \\
-\texttt{ChatPromptTemplate} & Plantilla de prompt con variables \\
-\texttt{RunnablePassthrough} & Pasa / enriquece el dict en LCEL \\
-\texttt{StrOutputParser} & Extrae string de \texttt{AIMessage} \\
-\texttt{Document} & Unidad de texto + metadata \\
+\texttt{Human/System/AI/ToolMessage} & Roles del historial \\
+\texttt{ChatPromptTemplate} & Prompt con variables \\
+\texttt{RunnablePassthrough} & Pasa / enriquece dict en LCEL \\
+\texttt{StrOutputParser} & \texttt{AIMessage} $\to$ string \\
+\texttt{Document} & Texto + metadata \\
 \texttt{as\_retriever()} & Vector store $\to$ interfaz retrieve \\
-\texttt{PineconeVectorStore} & Índice vectorial en Pinecone \\
-\texttt{Chroma} & Vector store local persistente \\
-\texttt{TavilySearch/Map/...} & Tools/APIs de Tavily \\
-\texttt{traceable} & Decorador LangSmith para spans \\
-\texttt{BaseModel} / \texttt{Field} & Schemas Pydantic (structured output) \\
-\texttt{load\_dotenv} & Carga secrets desde \texttt{.env} \\
+\texttt{PineconeVectorStore} / \texttt{Chroma} & Índices vectoriales \\
+\texttt{TavilySearch/Map/Extract/Crawl} & APIs Tavily \\
+\texttt{traceable} & Span LangSmith \\
+\texttt{BaseModel} / \texttt{Field} & Schema Pydantic \\
+\texttt{load\_dotenv} & Secrets desde \texttt{.env} \\
+\texttt{content\_and\_artifact} & Tool que devuelve (texto, datos UI) \\
 \bottomrule
 \end{longtable}
 
 % =============================================================================
-\section{Cheatsheet de patrones del repo}
+\section{Cheatsheet de patrones}
 % =============================================================================
 
-\subsection{1. Preguntar a un LLM (sin RAG)}
+\subsection{1. LLM sin RAG}
 \begin{lstlisting}
 result = llm.invoke([HumanMessage(content=query)])
 print(result.content)
@@ -768,12 +801,11 @@ agent = create_agent(model=llm, tools=[my_tool])
 result = agent.invoke({"messages": [HumanMessage(content="...")]})
 \end{lstlisting}
 
-\subsection{3. Ingest PDF \texorpdfstring{$\to$}{->} Pinecone}
+\subsection{3. Ingest PDF $\to$ Pinecone}
 \begin{lstlisting}
 docs = PyPDFLoader(path).load()
 chunks = RecursiveCharacterTextSplitter(
-    chunk_size=500, chunk_overlap=50
-).split_documents(docs)
+    chunk_size=500, chunk_overlap=50).split_documents(docs)
 PineconeVectorStore.from_documents(chunks, embeddings, index_name=INDEX)
 \end{lstlisting}
 
@@ -781,14 +813,12 @@ PineconeVectorStore.from_documents(chunks, embeddings, index_name=INDEX)
 \begin{lstlisting}
 chain = (
     RunnablePassthrough.assign(
-        context=itemgetter("question") | retriever | format_docs
-    )
-    | prompt | llm | StrOutputParser()
-)
+        context=itemgetter("question") | retriever | format_docs)
+    | prompt | llm | StrOutputParser())
 chain.invoke({"question": "..."})
 \end{lstlisting}
 
-\subsection{5. Retrieval como tool de agent}
+\subsection{5. Retrieval como tool}
 \begin{lstlisting}
 @tool(response_format="content_and_artifact")
 def retrieve_context(query: str):
@@ -798,54 +828,62 @@ def retrieve_context(query: str):
 agent = create_agent(model, tools=[retrieve_context], system_prompt=...)
 \end{lstlisting}
 
-\subsection{6. Orden típico de un agent ``calculadora de tools''}
-En el ejemplo de precios (módulo 03):
+\subsection{6. Orden agent ``calculadora de tools'' (03)}
 \begin{enumerate}[leftmargin=*]
   \item \texttt{get\_product\_price}
   \item \texttt{apply\_discount}
   \item \texttt{calculate\_shipping}
 \end{enumerate}
-Las reglas van en el \texttt{SystemMessage} / ReAct prompt: el modelo \textbf{no} debe calcular a mano.
+Las reglas viven en SystemMessage / ReAct prompt: el modelo \textbf{no} calcula a mano.
+
+\subsection{7. Formatear docs}
+\begin{lstlisting}
+def format_docs(docs):
+    return "\n\n".join(doc.page_content for doc in docs)
+\end{lstlisting}
 
 % =============================================================================
 \section{Errores mentales frecuentes}
 % =============================================================================
 
-\begin{enumerate}[leftmargin=*]
-  \item \textbf{Confundir LLM con embeddings}: uno genera texto; el otro vectores para búsqueda.
-  \item \textbf{Olvidar \texttt{load\_dotenv()}}: ``missing API key'' aunque el \texttt{.env} exista.
-  \item \textbf{Índice Pinecone vacío}: preguntar sin haber corrido ingestión.
-  \item \textbf{Embedding distinto} en ingest vs query.
-  \item \textbf{Docstring pobre} en \texttt{@tool} $\to$ el agent llama mal o no llama.
-  \item \textbf{Esperar que RAG cite solo}: debes pedir citas en el system prompt y/o pasar \texttt{metadata.source}.
-  \item \textbf{ReAct texto vs tool calling}: parsear ``Action:'' es frágil; \texttt{bind\_tools} es el camino moderno.
-  \item \textbf{Input shape del agent}: casi siempre \lstinline|{"messages": [...]}|, no un string suelto.
+\begin{enumerate}[leftmargin=*,itemsep=2pt]
+  \item Confundir \textbf{LLM} (texto) con \textbf{embeddings} (vectores).
+  \item Olvidar \texttt{load\_dotenv()} $\to$ ``missing API key''.
+  \item Preguntar a Pinecone/Chroma \textbf{sin haber ingerido}.
+  \item Embedding / dimensión distinta en ingest vs query.
+  \item Docstring pobre en \texttt{@tool} $\to$ tool mal llamada.
+  \item Esperar citas sin pedirlas en system prompt y/o sin pasar \texttt{metadata.source}.
+  \item ReAct texto vs tool calling: parsear ``Action:'' es frágil.
+  \item Input del agent: casi siempre \lstinline|{"messages": [...]}|, no un string suelto.
+  \item Índice Pinecone con dim distinta a \texttt{output\_dimensionality} de Google emb.
+  \item Rate limits (Google): batch + sleep; no mandar miles de chunks de golpe.
+  \item En 05, cwd importa: \texttt{persist\_directory="chroma\_db"} es relativo a dónde lanzas el script.
 \end{enumerate}
 
 % =============================================================================
-\section{Orden de lectura recomendado (repaso)}
+\section{Orden de lectura (repaso)}
 % =============================================================================
 
 \begin{enumerate}[leftmargin=*]
-  \item \texttt{01-hello-world} --- dotenv y entrada
-  \item \texttt{02-web-search-tool} --- \texttt{create\_agent}, \texttt{HumanMessage}, structured output
-  \item \texttt{03/.../agent-loop-tool-calling.py} --- mensajes + \texttt{bind\_tools} + loop
-  \item \texttt{03/.../react-prompt-...py} --- ReAct clásico (contexto histórico)
-  \item \texttt{04-rag/ingestion.py} + \texttt{ingest-pdf.py} --- loader, split, embed, Pinecone
-  \item \texttt{04-rag/main.py} --- RAG sin/con LCEL y el pipe \texttt{|}
-  \item \texttt{05/ingestion.py} --- TavilyCrawl + Chroma/async batches
+  \item \texttt{01-hello-world} --- dotenv
+  \item \texttt{02-web-search-tool} --- \texttt{create\_agent} + structured output
+  \item \texttt{03/.../agent-loop-tool-calling.py} --- mensajes + \texttt{bind\_tools}
+  \item \texttt{03/.../react-prompt-...py} --- ReAct clásico (contexto)
+  \item \texttt{04-rag/ingestion.py} + \texttt{ingest-pdf.py} --- load/split/embed/store
+  \item \texttt{04-rag/main.py} --- RAG $\pm$ LCEL
+  \item Notebooks Tavily + \texttt{05/ingestion.py} --- crawl $\to$ Chroma
   \item \texttt{05/backend/core.py} + \texttt{main.py} --- RAG agentic + UI
 \end{enumerate}
 
-\vspace{1.5em}
+\vspace{1.2em}
 \begin{center}
 \fbox{\parbox{0.92\textwidth}{\centering
-\textbf{Frase resumen}\\[0.4em]
-\textit{LangChain conecta modelos, tools y datos.\\
-Las chains componen pasos fijos con \texttt{|}.\\
-Los agents dejan que el LLM elija tools en un bucle de mensajes.\\
-RAG mete documentos relevantes en ese bucle o pipeline.\\
-LangSmith te deja ver cada paso.}
+\textbf{Frase resumen}\\[0.35em]
+\textit{LangChain conecta modelos, tools y datos.}\\
+\textit{Chains componen pasos fijos con \texttt{|}.}\\
+\textit{Agents dejan que el LLM elija tools en un bucle de mensajes.}\\
+\textit{RAG mete documentos relevantes en ese pipeline o bucle.}\\
+\textit{LangSmith te deja ver cada paso.}
 }}
 \end{center}
 

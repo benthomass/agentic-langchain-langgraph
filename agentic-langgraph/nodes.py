@@ -14,6 +14,7 @@ def run_agent_reasoning(state: MessagesState) -> MessagesState:
     """
     Run the agent reasoning node.
     """
-    tool_mode = ToolNode(tools)
-    agent = create_react_agent(llm, tool_mode)
-    return agent.invoke(state)
+    response = llm.invoke([{"role": "system", "content": SYSATEM_MESSAGE}, *state["messages"]])
+    return {"messages": [response]}
+
+tool_node = ToolNode(tools)
