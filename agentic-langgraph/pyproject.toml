@@ -5,6 +5,7 @@ description = "Project for learning LangGraph and applying it to build AI agents
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
+    "grandalf>=0.8",
     "langchain>=0.3.30",
     "langchain-core>=0.3.86",
     "langchain-google-genai>=3.1.0",
