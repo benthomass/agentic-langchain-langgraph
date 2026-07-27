@@ -27,7 +27,7 @@ def grade_documents(state: GraphState) -> Dict[str, Any]:
         score = retrieval_grader_chain.invoke(
             {"question": question, "document": doc.page_content}
         )
-    if grade.lower() == "yes":
+    if score == "yes":
         print(f"Document is relevant: {doc.page_content}")
         filtered_documents.append(doc)
     else:
