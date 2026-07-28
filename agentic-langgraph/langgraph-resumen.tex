@@ -1,5 +1,5 @@
 % =============================================================================
-% LangGraph --- Resumen + Cheat Sheet (módulos 01--02)
+% LangGraph --- Guía de consulta (módulos 01--04)
 % Compile: pdflatex langgraph-resumen.tex  (twice for TOC)
 % =============================================================================
 \documentclass[11pt,a4paper]{article}
@@ -79,54 +79,63 @@
   colback=gray!6, colframe=gray!50, fonttitle=\bfseries\ttfamily,
   title={Del proyecto}, breakable, #1
 }
-\newtcolorbox{mental}[1][]{
+\newtcolorbox{howto}[1][]{
+  colback=teal!4, colframe=teal!55!black, fonttitle=\bfseries,
+  title={Cómo aplicarlo}, breakable, #1
+}
+\newtcolorbox{lookup}[1][]{
   colback=violet!4, colframe=violet!55!black, fonttitle=\bfseries,
-  title={Modelo mental}, breakable, #1
+  title={¿No te acuerdas?}, breakable, #1
 }
 
 % --- Header ---
 \pagestyle{fancy}
 \fancyhf{}
-\fancyhead[L]{\small LangGraph --- Resumen + Cheat Sheet}
-\fancyhead[R]{\small Modules 01--02}
+\fancyhead[L]{\small LangGraph --- Guía de consulta}
+\fancyhead[R]{\small Modules 01--04}
 \fancyfoot[C]{\thepage}
 \renewcommand{\headrulewidth}{0.4pt}
 
 \title{%
-  \textbf{LangGraph --- Resumen \& Cheat Sheet}\\[0.35em]
-  \large Hoja de estudio: estado, mensajes, nodos y patrones de agentes
+  \textbf{LangGraph --- Guía instructiva \& Cheat Sheet}\\[0.35em]
+  \large Cómo construir agentes con estado, nodos y aristas
 }
-\author{Basado en \texttt{agentic-langgraph} (01-react-agent, 02-reflection-agent)}
+\author{Basado en \texttt{agentic-langgraph} (01--04) + \texttt{.env} real}
 \date{}
 
 \begin{document}
 \maketitle
 \tableofcontents
-\vspace{0.8em}
+\vspace{0.6em}
 
-\noindent\textit{Propósito:} entender \textbf{qué está pasando} y \textbf{qué puedes construir}, no documentar APIs.
-Enfasis en cómo los mensajes viven en el estado y circulan por nodos.
-Usa el índice o la tabla ``¿Quiero hacer X?'' (\S\ref{sec:decision}).
+\noindent\textit{Propósito:} guía para volver aquí cuando hayas olvidado \emph{cómo aplicar} algo.
+No es un dump de APIs: es ``quiero X $\to$ haz Y'', con el patrón del curso y el porqué.
+Empieza por \S\ref{sec:decision} o por la receta de montar un grafo (\S\ref{sec:recipe}).
 
 % =============================================================================
-\section{¿Quiero hacer X? (mapa de decisión)}
+\section{¿Quiero hacer X?}
 \label{sec:decision}
 % =============================================================================
 
 \begin{center}
-\begin{tabular}{@{}p{6.8cm}p{8.5cm}@{}}
+\begin{tabular}{@{}p{6.6cm}p{8.7cm}@{}}
 \toprule
-\textbf{Quiero\ldots} & \textbf{Usa\ldots} \\
+\textbf{Quiero\ldots} & \textbf{Haz\ldots} \\
 \midrule
-Un agente que llama tools en bucle & Patrón ReAct: nodos reason $\leftrightarrow$ act (\S\ref{sec:react}) \\
-Mejorar un texto con crítica & Patrón Reflection: generate $\leftrightarrow$ reflect (\S\ref{sec:reflect}) \\
-Estado = historial de chat & \texttt{MessagesState} o \texttt{Annotated[..., add\_messages]} \\
-Decidir el siguiente paso según el LLM & \texttt{add\_conditional\_edges} + función router \\
+Agente que llama tools en bucle & ReAct: reason $\leftrightarrow$ ToolNode (\S\ref{sec:react}) \\
+Mejorar texto con crítica & Reflection: generate $\leftrightarrow$ reflect (\S\ref{sec:reflect}) \\
+Investigar + citar + auto-revisar & Reflexion: draft $\to$ tools $\to$ revise (\S\ref{sec:reflexion}) \\
+RAG que se corrige solo & Agentic RAG: retrieve/grade/search/generate (\S\ref{sec:rag}) \\
+Estado = chat history & \texttt{MessagesState} o \texttt{Annotated[..., add\_messages]} \\
+Estado = campos sueltos (pregunta, docs\ldots) & \texttt{TypedDict} custom sin lista de mensajes \\
+Decidir el siguiente nodo & \texttt{add\_conditional\_edges} + función router \\
+Elegir entrada del grafo según la query & \texttt{set\_conditional\_entry\_point} \\
 Ejecutar tool calls del último AIMessage & \texttt{ToolNode(tools)} \\
-Que el LLM pueda pedir tools & \texttt{llm.bind\_tools(tools)} \\
-Arrancar el grafo & \texttt{app.invoke(\{"messages": [HumanMessage(...)]\})} \\
-Ver el flujo dibujado & \texttt{app.get\_graph().draw\_mermaid\_png(...)} \\
-Pipeline fijo sin branching & LCEL (\texttt{prompt | llm}) dentro de un nodo \\
+Que el LLM pida tools & \texttt{llm.bind\_tools(tools)} \\
+Forzar un schema de salida & \texttt{bind\_tools(..., tool\_choice=...)} o \texttt{with\_structured\_output} \\
+Arrancar el grafo & \texttt{app.invoke(\{...\})} tras \texttt{compile()} \\
+Ver el flujo & \texttt{draw\_mermaid()} / \texttt{draw\_mermaid\_png()} / \texttt{print\_ascii()} \\
+LCEL dentro de un nodo & \texttt{prompt | llm} y luego \texttt{return \{"messages": [...]\} } \\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -136,185 +145,200 @@ Pipeline fijo sin branching & LCEL (\texttt{prompt | llm}) dentro de un nodo \\
 % =============================================================================
 
 \begin{center}
-\begin{tabular}{@{}clp{9.2cm}@{}}
+\begin{tabular}{@{}clp{9.0cm}@{}}
 \toprule
-\textbf{\#} & \textbf{Carpeta} & \textbf{Idea central} \\
+\textbf{\#} & \textbf{Carpeta} & \textbf{Patrón que aprendes} \\
 \midrule
-01 & \texttt{01-react-agent} & Grafo ReAct: razonar $\to$ (¿tool?) $\to$ actuar $\to$ razonar \\
-02 & \texttt{02-reflection-agent} & Estado custom + LCEL; generate/reflect (en construcción) \\
+01 & \texttt{01-react-agent} & ReAct en grafo: reason $\leftrightarrow$ act \\
+02 & \texttt{02-reflection-agent} & Generate/reflect; crítica como HumanMessage \\
+03 & \texttt{03-reflexion-agent} & Draft + tools + revise; Pydantic como ``tool'' \\
+04 & \texttt{04-agentic-rag} & RAG con routing, grading y self-correction \\
 \bottomrule
 \end{tabular}
 \end{center}
 
 \begin{concept}[title=¿Qué es LangGraph?]
-Librería para construir agentes como \textbf{grafos de estado}: nodos = pasos computacionales,
-aristas = control de flujo, estado = memoria compartida que se actualiza en cada paso.
-\\[0.4em]
-LangChain te da piezas (LLM, tools, prompts, mensajes).
-LangGraph te da el \textbf{motor de orquestación} (bucles, bifurcaciones, persistencia).
+Orquestación de agentes como \textbf{grafos de estado}:
+nodos = pasos, aristas = control de flujo, estado = memoria compartida.
+\\[0.3em]
+LangChain da piezas (LLM, tools, prompts). LangGraph da el \textbf{motor}
+(bucles, bifurcaciones, criterios de parada que \emph{tú} diseñas).
 \end{concept}
 
-\begin{tip}[title=Cómo correr en este repo]
+\begin{tip}[title=Cómo correr]
 Desde \texttt{agentic-langgraph/}:
 \texttt{uv sync} $\cdot$
-\texttt{uv run python 01-react-agent/main.py}
+\texttt{uv run python 01-react-agent/main.py} $\cdot$
+\texttt{uv run python 04-agentic-rag/main.py}
+(tras haber ingerido con \texttt{ingestion.py}).
 \end{tip}
 
-% =============================================================================
-\section{Modelo mental: State $\to$ Nodes $\to$ Edges $\to$ Graph}
-\label{sec:mental}
-% =============================================================================
-
-\begin{mental}[title=Una frase]
-Un grafo LangGraph es una máquina que: (1)~guarda un \textbf{estado}, (2)~pasa ese estado por \textbf{nodos},
-(3)~cada nodo \textbf{devuelve un parche} (update parcial), (4)~LangGraph \textbf{fusiona} el parche con el estado,
-(5)~las \textbf{aristas} eligen el siguiente nodo (o \texttt{END}).
-\end{mental}
-
+\subsection{Variables de entorno (tu \texttt{.env})}
 \begin{center}
-\begin{tikzpicture}[
-  box/.style={draw, rounded corners, align=center, font=\small, inner sep=6pt},
-  arr/.style={-{Latex}, thick}
-]
-\node[box, fill=blue!8] (inv) {invoke\\\{\texttt{messages}: [...]\} };
-\node[box, fill=green!8, right=1.1cm of inv] (st) {Estado\\actual};
-\node[box, fill=orange!10, right=1.1cm of st] (nd) {Nodo\\lee + escribe};
-\node[box, fill=violet!8, right=1.1cm of nd] (mg) {Reducer\\fusiona};
-\node[box, fill=gray!15, right=1.1cm of mg] (nx) {Arista\\siguiente};
-\draw[arr] (inv) -- (st);
-\draw[arr] (st) -- (nd);
-\draw[arr] (nd) -- (mg);
-\draw[arr] (mg) -- (nx);
-\draw[arr] (nx.south) -- ++(0,-0.55) -| node[pos=0.25, below, font=\scriptsize]{bucle} (st.south);
-\end{tikzpicture}
-\end{center}
-
-\subsection{Piezas clave (vocabulario)}
-\begin{itemize}[leftmargin=*,itemsep=2pt]
-  \item \textbf{State}: TypedDict (o schema) con campos. En agentes de chat casi siempre hay \texttt{messages}.
-  \item \textbf{Node}: función \texttt{state $\to$ update}. No mutas el estado a mano; \textbf{devuelves} un dict con lo que cambió.
-  \item \textbf{Edge}: transición fija (\texttt{A $\to$ B}) o condicional (\texttt{A $\to$ f(state) $\to$ B|C|END}).
-  \item \textbf{Reducer}: función que dice \emph{cómo} fusionar update + estado previo (clave para mensajes).
-  \item \textbf{Compile}: congela el grafo en un \texttt{Runnable} invocable (\texttt{invoke}, \texttt{stream}, \ldots).
-  \item \texttt{START}/\texttt{END}: sentinels de entrada/salida del grafo.
-\end{itemize}
-
-\begin{fromcode}[title=01-react-agent/main.py --- esqueleto]
-\begin{lstlisting}
-flow = StateGraph(MessagesState)
-flow.add_node(AGENT_REASON, run_agent_reasoning)
-flow.set_entry_point(AGENT_REASON)
-flow.add_node(ACT, tool_node)
-flow.add_conditional_edges(AGENT_REASON, should_continue, {END: END, ACT: ACT})
-flow.add_edge(ACT, AGENT_REASON)
-app = flow.compile()
-\end{lstlisting}
-\end{fromcode}
-
-% =============================================================================
-\section{Mensajes: el ``idioma'' del agente}
-\label{sec:messages}
-% =============================================================================
-
-\begin{concept}[title=Por qué importan tanto]
-En LangGraph (y LangChain) la conversación \textbf{no es un string}: es una lista tipada de mensajes.
-Cada tipo tiene semántica distinta para el LLM y para el runtime de tools.
-Si mezclas mal roles / tool\_calls / ToolMessage, el bucle se rompe.
-\end{concept}
-
-\subsection{Tipos que debes reconocer}
-\begin{center}
-\begin{tabular}{@{}llp{7.8cm}@{}}
+\begin{tabular}{@{}llp{6.5cm}@{}}
 \toprule
-\textbf{Clase} & \textbf{Rol} & \textbf{Para qué} \\
+\textbf{Variable} & \textbf{Uso en este repo} \\
 \midrule
-\texttt{HumanMessage} & user & Entrada del humano / prompt de usuario \\
-\texttt{AIMessage} & assistant & Respuesta del LLM (texto y/o \texttt{tool\_calls}) \\
-\texttt{SystemMessage} & system & Instrucciones de comportamiento \\
-\texttt{ToolMessage} & tool & Resultado de ejecutar una tool (ligado a un \texttt{tool\_call\_id}) \\
+\texttt{GOOGLE\_API\_KEY} & Gemini (chat, routers, graders) \\
+\texttt{TAVILY\_API\_KEY} & Search en 01, 03, 04 \\
+\texttt{LANGCHAIN\_*} & Tracing LangSmith (opcional) \\
+\texttt{PINECONE\_*} / \texttt{INDEX\_NAME} & No usados en 04 (aquí Chroma local) \\
+\texttt{PYTHONPATH} & Útil si importas paquetes anidados \\
 \bottomrule
 \end{tabular}
 \end{center}
 
-\begin{tip}[title=Equivalencias de formato]
-También puedes pasar dicts \texttt{\{"role": "system", "content": "..."\}} al LLM.
-Internamente LangChain los normaliza a \texttt{BaseMessage}.
-En el estado del grafo, conviene trabajar con objetos mensaje (o dejar que \texttt{add\_messages} los convierta).
-\end{tip}
+% =============================================================================
+\section{Modelo mental: State \texorpdfstring{$\to$}{->} Nodes \texorpdfstring{$\to$}{->} Edges}
+\label{sec:mental}
+% =============================================================================
 
-\subsection{El ciclo tool-calling (lo crítico)}
-Cuando el LLM decide usar tools, la secuencia en \texttt{state["messages"]} suele ser:
+\begin{lookup}[title=Una frase]
+(1)~Guardas un \textbf{estado}.
+(2)~Un \textbf{nodo} lo lee y devuelve un \textbf{parche} (update parcial).
+(3)~Un \textbf{reducer} fusiona el parche.
+(4)~Una \textbf{arista} elige el siguiente nodo (o \texttt{END}).
+\end{lookup}
 
+\begin{center}
+\begin{tikzpicture}[
+  box/.style={draw, rounded corners, align=center, font=\small, inner sep=5pt},
+  arr/.style={-{Latex}, thick}
+]
+\node[box, fill=blue!8] (inv) {invoke\\input};
+\node[box, fill=green!8, right=0.9cm of inv] (st) {Estado};
+\node[box, fill=orange!10, right=0.9cm of st] (nd) {Nodo};
+\node[box, fill=violet!8, right=0.9cm of nd] (mg) {Reducer};
+\node[box, fill=gray!15, right=0.9cm of mg] (nx) {Arista};
+\draw[arr] (inv) -- (st);
+\draw[arr] (st) -- (nd);
+\draw[arr] (nd) -- (mg);
+\draw[arr] (mg) -- (nx);
+\draw[arr] (nx.south) -- ++(0,-0.5) -| node[pos=0.25, below, font=\scriptsize]{bucle} (st.south);
+\end{tikzpicture}
+\end{center}
+
+Vocabulario mínimo:
+\begin{itemize}[leftmargin=*,itemsep=1pt]
+  \item \textbf{State}: TypedDict / schema con campos.
+  \item \textbf{Node}: \texttt{state $\to$ update} (dict parcial).
+  \item \textbf{Edge}: fija o condicional (router).
+  \item \textbf{Reducer}: cómo se fusiona update + estado (p.\,ej.\ \texttt{add\_messages}).
+  \item \textbf{Compile}: congela el grafo en un Runnable (\texttt{invoke}/\texttt{stream}).
+  \item \texttt{START}/\texttt{END}: entrada/salida.
+\end{itemize}
+
+% =============================================================================
+\section{Receta: montar un grafo desde cero}
+\label{sec:recipe}
+% =============================================================================
+
+\begin{howto}[title=Checklist (cópiala cuando construyas uno nuevo)]
 \begin{enumerate}[leftmargin=*,itemsep=2pt]
-  \item \texttt{HumanMessage} --- pregunta del usuario.
-  \item \texttt{AIMessage} con \texttt{tool\_calls=[...]} --- el modelo \emph{pide} tools (aún no las ejecuta).
-  \item uno o más \texttt{ToolMessage} --- resultados reales de esas tools.
-  \item nuevo \texttt{AIMessage} --- respuesta final (o más tool\_calls $\to$ se repite).
+  \item \textbf{Define el estado}: ¿historial de mensajes o campos (\texttt{question}, \texttt{documents},\ldots)?
+  \item \textbf{Lista los nodos}: cada uno hace \emph{una} cosa (reason, act, grade,\ldots).
+  \item \textbf{Dibuja las aristas}: fijas vs ``si X entonces Y''.
+  \item \textbf{Criterio de parada}: ¿sin tool\_calls? ¿contador? ¿grader dice useful?
+  \item \textbf{Implementa nodos} que \texttt{return \{campo: valor\_nuevo\}}.
+  \item \texttt{StateGraph(...)} $\to$ \texttt{add\_node} $\to$ entry $\to$ edges $\to$ \texttt{compile()}.
+  \item \texttt{invoke} con la shape correcta del estado inicial.
+  \item Dibuja el grafo (\texttt{draw\_mermaid}) para validar el diseño.
 \end{enumerate}
+\end{howto}
 
-\begin{warn}[title=El LLM no ejecuta tools]
-\texttt{bind\_tools} solo enseña al modelo el esquema de las tools.
-Quien ejecuta es tu código: en el curso, \texttt{ToolNode(tools)}.
-Sin el nodo \texttt{act}, el \texttt{AIMessage} con \texttt{tool\_calls} se queda ``colgado''.
-\end{warn}
-
-\begin{fromcode}[title=Cómo arrancas el grafo (entrada = mensajes)]
+\begin{fromcode}[title=Esqueleto genérico]
 \begin{lstlisting}
-res = app.invoke({
-    "messages": [
-        HumanMessage(content="What is the weather in Tokyo? ...")
-    ]
-})
-# salida: dict de estado; la respuesta final suele ser:
-res["messages"][-1].content
+from langgraph.graph import StateGraph, START, END
+
+builder = StateGraph(MyState)
+builder.add_node("a", node_a)
+builder.add_node("b", node_b)
+builder.add_edge(START, "a")                 # o set_entry_point("a")
+builder.add_conditional_edges("a", router, {"b": "b", END: END})
+builder.add_edge("b", "a")                   # bucle
+app = builder.compile()
+result = app.invoke({...})                   # keys = campos del estado
 \end{lstlisting}
 \end{fromcode}
 
 % =============================================================================
-\section{Estado y reducers: cómo ``enviar'' mensajes}
+\section{Mensajes (agentes de chat)}
+\label{sec:messages}
+% =============================================================================
+
+En 01--03 la conversación es una \textbf{lista tipada}, no un string.
+
+\begin{center}
+\begin{tabular}{@{}llp{7.6cm}@{}}
+\toprule
+\textbf{Clase} & \textbf{Rol} & \textbf{Para qué} \\
+\midrule
+\texttt{HumanMessage} & user & Pregunta / feedback ``como usuario'' \\
+\texttt{AIMessage} & assistant & Texto y/o \texttt{tool\_calls} \\
+\texttt{SystemMessage} & system & Reglas (a menudo inyectadas en el nodo) \\
+\texttt{ToolMessage} & tool & Resultado real (\texttt{tool\_call\_id} obligatorio) \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Ciclo tool-calling (obligatorio recordarlo)}
+\begin{enumerate}[leftmargin=*,itemsep=1pt]
+  \item \texttt{HumanMessage}
+  \item \texttt{AIMessage} con \texttt{tool\_calls} --- el modelo \emph{pide} (no ejecuta)
+  \item \texttt{ToolMessage}(s) --- tu código / \texttt{ToolNode} ejecuta
+  \item nuevo \texttt{AIMessage} --- final o más tool\_calls
+\end{enumerate}
+
+\begin{warn}[title=bind\_tools $\neq$ ejecutar]
+\texttt{bind\_tools} enseña el schema. Quien ejecuta es \texttt{ToolNode} (o tu nodo manual).
+Sin nodo act, el AIMessage con tool\_calls queda colgado.
+\end{warn}
+
+\begin{howto}[title=Arrancar un grafo de mensajes]
+\begin{lstlisting}
+res = app.invoke({
+    "messages": [HumanMessage(content="What is the weather in Tokyo?")]
+})
+# o dicts: {"messages": [{"role": "user", "content": "..."}]}
+print(res["messages"][-1].content)
+\end{lstlisting}
+\end{howto}
+
+% =============================================================================
+\section{Estado y reducers}
 \label{sec:state}
 % =============================================================================
 
 \subsection{Regla de oro}
-Un nodo \textbf{no reemplaza} toda la lista de mensajes por defecto.
-Devuelve un \textbf{update parcial}:
+El nodo \textbf{devuelve un update parcial}, no reescribe el mundo entero:
 
 \begin{lstlisting}
-return {"messages": [response]}   # "añade esto", no "borra todo y pon solo esto"
+return {"messages": [response]}   # "añade esto"
 \end{lstlisting}
 
-LangGraph fusiona ese update con el estado previo usando el \textbf{reducer} del campo.
-
-\subsection{\texttt{add\_messages}: el reducer de chat}
-\begin{concept}[title=\texttt{Annotated[list, add\_messages]}]
-\texttt{add\_messages(left, right)} fusiona dos listas:
-\begin{itemize}[leftmargin=*,itemsep=1pt]
-  \item por defecto es \textbf{append-only} (acumula historial);
-  \item si un mensaje nuevo tiene el \textbf{mismo \texttt{id}} que uno existente, lo \textbf{reemplaza}.
-\end{itemize}
-Por eso puedes devolver solo el mensaje nuevo y el historial completo sobrevive.
+\subsection{\texttt{add\_messages}}
+\begin{concept}[title=Reducer de chat]
+\texttt{Annotated[list, add\_messages]} fusiona listas:
+por defecto \textbf{append}; si el mensaje nuevo tiene el mismo \texttt{id}, \textbf{reemplaza}.
+Por eso basta devolver solo el mensaje nuevo.
 \end{concept}
 
-Dos formas equivalentes en el curso:
+Dos formas equivalentes:
 
 \begin{center}
 \begin{tabular}{@{}p{7.4cm}p{7.4cm}@{}}
 \toprule
-\textbf{Atajo (módulo 01)} & \textbf{Explícito (módulo 02)} \\
+\textbf{Atajo (01, 03)} & \textbf{Explícito (02)} \\
 \midrule
 \begin{lstlisting}
 from langgraph.graph import MessagesState
-# equivale a:
-# messages: Annotated[list, add_messages]
 StateGraph(MessagesState)
 \end{lstlisting}
 &
 \begin{lstlisting}
 class MessageGraph(TypedDict):
     messages: Annotated[
-        list[BaseMessage],
-        add_messages
-    ]
+        list[BaseMessage], add_messages]
 \end{lstlisting}
 \\
 \bottomrule
@@ -322,230 +346,394 @@ class MessageGraph(TypedDict):
 \end{center}
 
 \begin{warn}[title=Sin reducer = overwrite]
-Si defines \texttt{messages: list[BaseMessage]} \emph{sin} \texttt{Annotated[..., add\_messages]},
-el update suele \textbf{sobrescribir} el campo entero.
-Pierdes el historial y rompes tool calling.
+\texttt{messages: list[...]} sin \texttt{Annotated[..., add\_messages]}
+suele \textbf{pisar} el historial y romper tool calling.
 \end{warn}
 
-\subsection{Qué ve / qué devuelve un nodo}
-\begin{itemize}[leftmargin=*,itemsep=2pt]
-  \item \textbf{Input}: el estado completo actual (p.\,ej.\ \texttt{state["messages"]} = historial).
-  \item \textbf{Output}: dict parcial con claves del estado. Solo incluye lo que cambió.
-  \item Otros campos (si los añades: \texttt{count}, \texttt{draft}, \texttt{critique},\ldots) pueden tener otros reducers
-        (suma, last-value, append de listas, etc.).
-\end{itemize}
-
-\begin{fromcode}[title=01-react-agent/nodes.py --- nodo que añade un AIMessage]
-\begin{lstlisting}
-def run_agent_reasoning(state: MessagesState) -> MessagesState:
-    response = llm.invoke(
-        [{"role": "system", "content": SYSATEM_MESSAGE}, *state["messages"]]
-    )
-    return {"messages": [response]}  # se append-ea al historial
-\end{lstlisting}
-\end{fromcode}
-
-\begin{mental}[title=Truco para no confundirte]
-Piensa: ``el nodo propone \emph{deltas}; el reducer decide \emph{cómo se integran}.''
-Para mensajes, el delta es ``estos mensajes nuevos''; el reducer es ``append (o replace by id)''.
-\end{mental}
-
-\subsection{Estado custom: más allá de solo mensajes}
-Puedes enriquecer el TypedDict:
+\subsection{Estado \emph{sin} mensajes (04)}
+Cuando el flujo no es un chat sino un pipeline de datos:
 
 \begin{lstlisting}
-class AgentState(TypedDict):
-    messages: Annotated[list[BaseMessage], add_messages]
-    iterations: int          # last-value (overwrite)
-    draft: str               # último borrador
+class GraphState(TypedDict):
+    question: str
+    generation: str
+    web_search: bool
+    documents: List[str]   # en la práctica: List[Document]
 \end{lstlisting}
 
-Posibilidades típicas: contadores de bucles, flags de ``ya está bien'', artefactos intermedios,
-resultados estructurados, IDs de sesión, etc.
+Aquí cada update \textbf{sobrescribe} el campo (last-value). Eso es correcto:
+no quieres ``append'' de la pregunta; quieres el valor actual.
+
+\begin{lookup}[title=¿MessagesState o TypedDict custom?]
+¿El LLM necesita historial de turnos/tools? $\to$ mensajes + \texttt{add\_messages}.
+¿Orquestas retrieve/grade/generate con flags? $\to$ campos explícitos (04).
+¿Ambos? $\to$ mezcla: \texttt{messages} anotado + otros campos.
+\end{lookup}
 
 % =============================================================================
-\section{Nodos, aristas y control de flujo}
+\section{Nodos, aristas, ToolNode}
 \label{sec:flow}
 % =============================================================================
 
-\subsection{Nodos}
-\begin{itemize}[leftmargin=*,itemsep=2pt]
-  \item Función Python (o Runnable) asociada a un nombre string.
-  \item Debe ser \textbf{puro respecto al contrato}: lee estado $\to$ calcula $\to$ return update.
-  \item Puede encapsular LCEL (\texttt{prompt | llm}), tools, retrieval, APIs, etc.
-\end{itemize}
+\subsection{Contrato de un nodo}
+\begin{lstlisting}
+def my_node(state: MyState) -> dict:
+    # lee state["..."]
+    # calcula
+    return {"campo": nuevo_valor}   # solo lo que cambió
+\end{lstlisting}
 
-\subsection{Aristas fijas vs condicionales}
+Puede encapsular LCEL (\texttt{prompt | llm}), retrieval, HTTP, etc.
+
+\subsection{Aristas}
 \begin{center}
 \begin{tabular}{@{}p{7.2cm}p{7.6cm}@{}}
 \toprule
 \textbf{Fija} & \textbf{Condicional} \\
 \midrule
-\texttt{add\_edge(ACT, AGENT\_REASON)}
-siempre ACT $\to$ reason
+\texttt{add\_edge("act", "reason")}
+siempre act $\to$ reason
 &
 \texttt{add\_conditional\_edges(src, router, mapping)}
-el router mira el estado y elige clave del mapping
+router mira estado $\to$ clave del mapping
 \\
 \bottomrule
 \end{tabular}
 \end{center}
 
-\begin{fromcode}[title=Router del ReAct]
+\begin{howto}[title=Router típico tras un LLM con tools]
 \begin{lstlisting}
 def should_continue(state: MessagesState) -> str:
     if not state["messages"][-1].tool_calls:
-        return END      # respuesta final: no pide tools
-    return ACT          # hay tool_calls: hay que ejecutarlas
+        return END
+    return "act"
 \end{lstlisting}
-\end{fromcode}
+\end{howto}
 
-\begin{tip}[title=Patrón habitual]
-Tras un nodo ``LLM'':
+Variantes de mapping:
 \begin{itemize}[leftmargin=*,itemsep=1pt]
-  \item si hay \texttt{tool\_calls} $\to$ nodo tools;
-  \item si no $\to$ \texttt{END} (o nodo de post-proceso).
+  \item Dict: \texttt{\{END: END, "act": "act"\}}
+  \item Lista de destinos: \texttt{["execute\_tools", END]} (03) si el router ya devuelve el nombre del nodo
 \end{itemize}
-Eso es exactamente el corazón del módulo 01.
-\end{tip}
+
+\subsection{Entry points}
+\begin{itemize}[leftmargin=*,itemsep=1pt]
+  \item \texttt{set\_entry\_point("draft")} o \texttt{add\_edge(START, "draft")}
+  \item \texttt{set\_conditional\_entry\_point(router, \{...\})} --- la \emph{primera} decisión depende del input (04: vectorstore vs web)
+\end{itemize}
 
 \subsection{\texttt{ToolNode}}
-Prebuilt de LangGraph: lee el último \texttt{AIMessage}, ejecuta cada \texttt{tool\_call},
-y emite los \texttt{ToolMessage} correspondientes (que el reducer append-ea).
-
 \begin{lstlisting}
 from langgraph.prebuilt import ToolNode
 tool_node = ToolNode(tools)
 \end{lstlisting}
+Lee el último \texttt{AIMessage}, ejecuta cada \texttt{tool\_call}, emite \texttt{ToolMessage}s.
+
+\begin{tip}[title=Nombre de la tool = nombre del tool\_call]
+En 03 las ``tools'' se registran con \texttt{name=AnswerQuestion.\_\_name\_\_}
+para que coincidan con lo que el LLM pide vía \texttt{bind\_tools}.
+\end{tip}
 
 % =============================================================================
-\section{Módulo 01 --- Agente ReAct en grafo}
+\section{Módulo 01 --- ReAct en grafo}
 \label{sec:react}
 % =============================================================================
 
 \begin{concept}[title=Idea]
-ReAct = \textbf{Reason} + \textbf{Act} en bucle.
-El modelo razona (y opcionalmente pide tools); el grafo actúa; se vuelve a razonar con los resultados en el historial.
+Reason + Act en bucle. El LLM razona (y pide tools); el grafo actúa; se vuelve a razonar con resultados en el historial.
 \end{concept}
 
 \begin{center}
 \begin{tikzpicture}[
-  n/.style={draw, rounded corners, align=center, font=\small, inner sep=5pt, minimum width=2.4cm},
+  n/.style={draw, rounded corners, align=center, font=\small, inner sep=5pt, minimum width=2.3cm},
   arr/.style={-{Latex}, thick}
 ]
-\node[n, fill=blue!10] (r) {agent\_reason\\LLM + tools};
-\node[n, fill=orange!12, right=2.2cm of r] (a) {act\\ToolNode};
-\node[n, fill=gray!18, below=1.0cm of r] (e) {END};
+\node[n, fill=blue!10] (r) {agent\_reason};
+\node[n, fill=orange!12, right=2.0cm of r] (a) {act\\ToolNode};
+\node[n, fill=gray!18, below=0.9cm of r] (e) {END};
 \draw[arr] (r) -- node[above, font=\scriptsize]{tool\_calls?} (a);
 \draw[arr] (r) -- node[left, font=\scriptsize]{no} (e);
-\draw[arr] (a) -- ++(0,-0.7) -| node[pos=0.25, below, font=\scriptsize]{siempre} (r);
+\draw[arr] (a) -- ++(0,-0.65) -| node[pos=0.25, below, font=\scriptsize]{siempre} (r);
 \end{tikzpicture}
 \end{center}
 
-\subsection{Piezas en el repo}
-\begin{itemize}[leftmargin=*,itemsep=2pt]
-  \item \texttt{react.py}: tools (\texttt{TavilySearch}, \texttt{triple}) + \texttt{llm.bind\_tools(tools)}.
-  \item \texttt{nodes.py}: nodo reason + \texttt{ToolNode}.
-  \item \texttt{main.py}: grafo, router, \texttt{invoke} con \texttt{HumanMessage}.
+\subsection{Archivos}
+\begin{itemize}[leftmargin=*,itemsep=1pt]
+  \item \texttt{react.py}: \texttt{TavilySearch} + \texttt{triple} + \texttt{llm.bind\_tools(tools)}
+  \item \texttt{nodes.py}: \texttt{run\_agent\_reasoning} + \texttt{ToolNode}
+  \item \texttt{main.py}: grafo, \texttt{should\_continue}, invoke
 \end{itemize}
 
-\subsection{Qué ``viaja'' en cada paso (ejemplo mental)}
-\begin{enumerate}[leftmargin=*,itemsep=2pt]
-  \item \textbf{invoke}: \texttt{[Human(...)]}
-  \item \textbf{reason}: LLM ve system + historial $\to$ append \texttt{AIMessage(tool\_calls=[search,...])}
-  \item router $\to$ \texttt{act}
-  \item \textbf{act}: ToolNode $\to$ append \texttt{ToolMessage(content=...)}
-  \item vuelta a \textbf{reason}: ahora el historial incluye resultados $\to$ quizá más tools o respuesta final
-  \item si \texttt{tool\_calls} vacío $\to$ \texttt{END}
+\subsection{Qué viaja en el estado (ejemplo)}
+\begin{enumerate}[leftmargin=*,itemsep=1pt]
+  \item invoke: \texttt{[Human(...)]}
+  \item reason $\to$ append \texttt{AIMessage(tool\_calls=[...])}
+  \item router $\to$ act $\to$ append \texttt{ToolMessage}s
+  \item reason de nuevo (ya ve resultados) $\to$ más tools o texto final
+  \item sin \texttt{tool\_calls} $\to$ END
 \end{enumerate}
 
-\begin{tip}[title=Por qué el historial es obligatorio]
-Sin append de \texttt{ToolMessage}, el LLM no ``ve'' el resultado de la tool en el siguiente turno.
-El estado \emph{es} la memoria de corto plazo del agente.
+\begin{howto}[title=Reutiliza este patrón cuando\ldots]
+\ldots{}necesites un agente clásico ``usa tools hasta responder''.
+Copia: \texttt{MessagesState} + nodo LLM con \texttt{bind\_tools} + \texttt{ToolNode} + conditional edge por \texttt{tool\_calls}.
+Cambia solo la lista de tools y el system prompt.
+\end{howto}
+
+\begin{fromcode}[title=nodes.py --- reason añade un AIMessage]
+\begin{lstlisting}
+def run_agent_reasoning(state: MessagesState):
+    response = llm.invoke(
+        [{"role": "system", "content": SYSATEM_MESSAGE}, *state["messages"]]
+    )
+    return {"messages": [response]}
+\end{lstlisting}
+\end{fromcode}
+
+\begin{tip}
+El system prompt se inyecta en el invoke del nodo (no se guarda en el estado).
+Así no ensucias el historial persistente.
 \end{tip}
 
 % =============================================================================
-\section{Módulo 02 --- Reflection agent}
+\section{Módulo 02 --- Reflection}
 \label{sec:reflect}
 % =============================================================================
 
 \begin{concept}[title=Idea]
-Dos roles en bucle: un \textbf{generador} produce un draft; un \textbf{reflector} critica;
-el generador revisa con esa crítica en el historial.
-No hace falta tools externas: el ``acto'' es criticar/mejorar texto.
+Dos roles: \textbf{generate} escribe; \textbf{reflect} critica; generate revisa.
+El ``acto'' es criticar texto, no una tool externa.
 \end{concept}
 
-\subsection{Chains (LCEL) como cerebro de nodos}
-\begin{fromcode}[title=02-reflection-agent/chains.py]
-\begin{lstlisting}
-generation_prompt = ChatPromptTemplate.from_messages([
-    ("system", "... escribe el mejor tweet ..."),
-    MessagesPlaceholder(variable_name="messages"),
-])
-generate_chain = generation_prompt | llm
-# reflection_chain análogo, con prompt de crítico
-\end{lstlisting}
-\end{fromcode}
-
-\texttt{MessagesPlaceholder} inyecta \textbf{toda} la lista \texttt{state["messages"]} en el prompt.
-Así el generador ve request + críticas previas; el reflector ve el draft a evaluar.
-
-\subsection{Nodo generate (patrón)}
-\begin{lstlisting}
-def generate_node(state):
-    response = generate_chain.invoke({"messages": state["messages"]})
-    # o generate_chain.invoke(state["messages"]) según cómo esté el prompt
-    return {"messages": [response]}
-\end{lstlisting}
-
-\subsection{Flujo típico Reflection (cuando completes el grafo)}
 \begin{center}
 \begin{tikzpicture}[
-  n/.style={draw, rounded corners, align=center, font=\small, inner sep=5pt, minimum width=2.2cm},
+  n/.style={draw, rounded corners, align=center, font=\small, inner sep=5pt, minimum width=2.1cm},
   arr/.style={-{Latex}, thick}
 ]
 \node[n, fill=blue!10] (g) {generate};
-\node[n, fill=violet!12, right=2.0cm of g] (r) {reflect};
-\node[n, fill=gray!18, below=1.0cm of g] (e) {END};
+\node[n, fill=violet!12, right=1.8cm of g] (r) {reflect};
+\node[n, fill=gray!18, below=0.9cm of g] (e) {END};
 \draw[arr] (g) -- (r);
-\draw[arr] (r) -- ++(0,0.75) -| node[pos=0.2, above, font=\scriptsize]{sigue} (g);
-\draw[arr] (g) -- node[left, font=\scriptsize]{¿listo?} (e);
+\draw[arr] (r) -- ++(0,0.7) -| (g);
+\draw[arr] (g) -- node[left, font=\scriptsize]{len$>$6} (e);
 \end{tikzpicture}
 \end{center}
 
-\begin{itemize}[leftmargin=*,itemsep=2pt]
-  \item Tras \texttt{generate}: ¿parar o reflejar? (contador de iteraciones, o heurística).
-  \item Tras \texttt{reflect}: normalmente vuelves a \texttt{generate} (la crítica entra como mensaje más).
-  \item Truco frecuente: en reflect, devolver la crítica como \texttt{HumanMessage} (o role user)
-        para que el generador la trate como feedback externo.
-\end{itemize}
+\subsection{LCEL como cerebro del nodo}
+\begin{lstlisting}
+generation_prompt = ChatPromptTemplate.from_messages([
+    ("system", "You write excellent twitter posts..."),
+    MessagesPlaceholder(variable_name="messages"),
+])
+generate_chain = generation_prompt | llm
+\end{lstlisting}
 
-\begin{warn}[title=Estado del código del módulo 02]
-El grafo aún está incompleto en el repo (\texttt{main.py} define estado + \texttt{generate\_node}, pero no monta edges/compile).
-Hay un typo de import: \texttt{langgrapg} $\to$ \texttt{langgraph}.
-El resumen describe el \textbf{patrón}, no asume que el ejemplo compile tal cual.
+\texttt{MessagesPlaceholder} inyecta \textbf{todo} el historial: request + drafts + críticas.
+
+\subsection{Truco clave del reflector}
+\begin{lstlisting}
+def reflection_node(state):
+    res = reflect_chain.invoke({"messages": state["messages"]})
+    return {"messages": [HumanMessage(content=res.content)]}
+\end{lstlisting}
+
+La crítica se guarda como \texttt{HumanMessage} para que el generador la trate como feedback externo
+(no como ``él mismo hablando otra vez'').
+
+\subsection{Parada}
+\begin{lstlisting}
+def should_continue(state):
+    if len(state["messages"]) > 6:
+        return END
+    return REFLECT
+\end{lstlisting}
+
+\begin{howto}[title=Reutiliza Reflection cuando\ldots]
+\ldots{}quieras mejorar un artefacto (tweet, email, código) con un crítico.
+Necesitas: dos prompts, dos nodos, edge reflect$\to$generate, conditional generate$\to$END|reflect, y un contador/heurística de parada.
+\end{howto}
+
+% =============================================================================
+\section{Módulo 03 --- Reflexion (research loop)}
+\label{sec:reflexion}
+% =============================================================================
+
+\begin{concept}[title=Idea]
+Más potente que Reflection:
+(1)~draft estructurado con auto-crítica y search queries,
+(2)~ejecutar esas queries (Tavily),
+(3)~revisar con citas,
+(4)~repetir hasta $N$ iteraciones.
+\end{concept}
+
+\begin{center}
+\begin{tikzpicture}[
+  n/.style={draw, rounded corners, align=center, font=\scriptsize, inner sep=4pt},
+  arr/.style={-{Latex}, thick}
+]
+\node[n, fill=blue!10] (d) {draft};
+\node[n, fill=orange!12, right=1.3cm of d] (t) {execute\_tools};
+\node[n, fill=teal!12, right=1.3cm of t] (r) {revise};
+\node[n, fill=gray!18, below=0.85cm of r] (e) {END};
+\draw[arr] (d) -- (t);
+\draw[arr] (t) -- (r);
+\draw[arr] (r) -- node[right, font=\scriptsize]{iter$\le$N} (t);
+\draw[arr] (r) -- node[below left, font=\scriptsize]{iter$>$N} (e);
+\end{tikzpicture}
+\end{center}
+
+\subsection{Schemas Pydantic = ``tools'' de salida}
+\begin{lstlisting}
+class AnswerQuestion(BaseModel):
+    answer: str
+    reflection: Reflection      # missing / superfluous
+    search_query: List[str]     # 1-3 queries
+
+class ReviseAnswer(AnswerQuestion):
+    references: List[str]
+\end{lstlisting}
+
+El LLM no llama Tavily directamente: emite un \texttt{AnswerQuestion} vía tool calling;
+luego \texttt{ToolNode} ejecuta \texttt{run\_queries(search\_queries)}.
+
+\begin{howto}[title=Forzar el schema]
+\begin{lstlisting}
+first_responder = prompt | llm.bind_tools(
+    tools=[AnswerQuestion], tool_choice="AnswerQuestion"
+)
+\end{lstlisting}
+\texttt{tool\_choice} obliga a usar esa tool (salida estructurada fiable).
+\end{howto}
+
+\subsection{ToolNode con nombres alineados}
+\begin{lstlisting}
+execute_tools = ToolNode([
+    StructuredTool.from_function(run_queries, name=AnswerQuestion.__name__),
+    StructuredTool.from_function(run_queries, name=ReviseAnswer.__name__),
+])
+\end{lstlisting}
+
+\subsection{Parada por contador de ToolMessages}
+\begin{lstlisting}
+def event_loop(state) -> Literal["execute_tools", END]:
+    num_iterations = sum(isinstance(m, ToolMessage) for m in state["messages"])
+    if num_iterations > MAX_ITERATIONS:  # 2 en el curso
+        return END
+    return "execute_tools"
+\end{lstlisting}
+
+\begin{howto}[title=Reutiliza Reflexion cuando\ldots]
+\ldots{}necesites investigación con evidencia: draft $\to$ search $\to$ revise $\to$ cite.
+Piezas: Pydantic answer+critique+queries, \texttt{bind\_tools}+\texttt{tool\_choice}, ToolNode que ejecuta searches, MAX\_ITERATIONS.
+\end{howto}
+
+\begin{tip}[title=Leer la respuesta final]
+Tras \texttt{invoke}, el último mensaje suele ser un \texttt{AIMessage} con tool\_calls;
+la respuesta tipada está en \texttt{tool\_calls[0]["args"]["answer"]}.
+\end{tip}
+
+% =============================================================================
+\section{Módulo 04 --- Agentic RAG}
+\label{sec:rag}
+% =============================================================================
+
+\begin{concept}[title=Idea]
+RAG clásico + decisiones:
+¿vectorstore o web? ¿docs relevantes? ¿la respuesta está grounded? ¿responde la pregunta?
+Si falla, busca en la web o regenera.
+\end{concept}
+
+\subsection{Estado (campos, no chat)}
+\begin{lstlisting}
+class GraphState(TypedDict):
+    question: str
+    generation: str
+    web_search: bool
+    documents: List[...]
+\end{lstlisting}
+
+Entrada típica: \texttt{app.invoke(\{"question": "What is film noir?"\})}.
+
+\subsection{Nodos}
+\begin{center}
+\begin{tabular}{@{}lp{10.5cm}@{}}
+\toprule
+\textbf{Nodo} & \textbf{Qué hace} \\
+\midrule
+\texttt{retrieve} & \texttt{retriever.invoke(question)} $\to$ documents \\
+\texttt{grade\_documents} & LLM grader por doc; filtra; pone \texttt{web\_search} si hay irrelevantes \\
+\texttt{web\_search} & Tavily $\to$ Document; lo añade a documents \\
+\texttt{generate} & \texttt{prompt | llm | StrOutputParser} con context + question \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Flujo (intención del diseño)}
+\begin{enumerate}[leftmargin=*,itemsep=1pt]
+  \item \textbf{Router de entrada}: film noir / Bogart $\to$ retrieve; otro tema $\to$ web\_search
+        (\texttt{set\_conditional\_entry\_point} + \texttt{RouteQuery}).
+  \item retrieve $\to$ grade\_documents.
+  \item Si docs flojos (\texttt{web\_search=True}) $\to$ web\_search; si no $\to$ generate.
+  \item Tras generate: hallucination grader + answer grader:
+        \begin{itemize}[leftmargin=*,itemsep=0pt]
+          \item useful $\to$ END
+          \item not useful $\to$ WEB\_SEARCH
+          \item not supported $\to$ GENERATE de nuevo
+        \end{itemize}
+  \item web\_search $\to$ generate (siempre).
+\end{enumerate}
+
+\begin{howto}[title=Structured output para routers/graders]
+\begin{lstlisting}
+class RouteQuery(BaseModel):
+    datasource: Literal["vectorstore", "web_search"] = Field(...)
+
+router = prompt | llm.with_structured_output(RouteQuery)
+source = router.invoke({"question": q})
+# source.datasource == "vectorstore" | "web_search"
+\end{lstlisting}
+Igual para graders binarios (\texttt{binary\_score}, \texttt{is\_hallucinated}).
+\end{howto}
+
+\subsection{Ingestión (una vez)}
+\texttt{ingestion.py}: URLs film noir $\to$ UnstructuredLoader $\to$ RecursiveSplitter (250/20)
+$\to$ \texttt{OllamaEmbeddings(nomic-embed-text)} $\to$ Chroma (\texttt{collection\_name="film-noir"}).
+El \texttt{retriever} se importa en el nodo retrieve.
+
+\begin{howto}[title=Reutiliza Agentic RAG cuando\ldots]
+\ldots tu corpus es parcial y quieres fallback a web + auto-chequeo de calidad.
+Necesitas: estado con question/documents/generation/flags, nodos retrieve/grade/search/generate,
+y 2--3 chains de grading con \texttt{with\_structured\_output}.
+\end{howto}
+
+\begin{warn}[title=Detalle del repo]
+En \texttt{graph.py} aparecen \texttt{set\_entry\_point(RETRIEVE)} y
+\texttt{set\_conditional\_entry\_point(...)}. Si ambos están, comprueba cuál queda activo
+en tu versión de LangGraph; el diseño didáctico apunta al router condicional.
+Además, al gradear docs conviene comparar \texttt{score.binary\_score == "yes"}
+(objeto Pydantic), no el objeto entero con el string \texttt{"yes"}.
 \end{warn}
 
 % =============================================================================
-\section{Posibilidades: qué puedes construir con esto}
-\label{sec:possibilities}
+\section{Patrones: cuándo usar cuál}
+\label{sec:patterns}
 % =============================================================================
 
-Con solo State + Nodes + Conditional edges ya cubres una familia grande de agentes:
+\begin{center}
+\begin{tabular}{@{}p{3.2cm}p{5.5cm}p{6.5cm}@{}}
+\toprule
+\textbf{Patrón} & \textbf{Cuándo} & \textbf{Esencia} \\
+\midrule
+ReAct & Tools externas, pregunta abierta & reason $\leftrightarrow$ ToolNode hasta sin tool\_calls \\
+Reflection & Mejorar un draft con crítica & generate $\leftrightarrow$ reflect; crítica como Human \\
+Reflexion & Research + citas + mejora & draft(struct) $\to$ search $\to$ revise; $N$ iters \\
+Agentic RAG & Corpus + fallback + QA check & route / grade / search / regenerate \\
+\bottomrule
+\end{tabular}
+\end{center}
 
-\begin{itemize}[leftmargin=*,itemsep=3pt]
-  \item \textbf{Tool agent (ReAct)}: LLM $\leftrightarrow$ tools hasta respuesta final.
-  \item \textbf{Reflection / critique}: generate $\leftrightarrow$ critique con historial compartido.
-  \item \textbf{Multi-agente}: nodos distintos (researcher, writer, reviewer) + handoff por aristas.
-  \item \textbf{RAG en un nodo}: retrieval dentro de un nodo; el resto del grafo orquesta.
-  \item \textbf{Human-in-the-loop}: arista a un nodo que espera input humano (con checkpointer).
-  \item \textbf{Routing}: clasificar la query y mandarla a subgrafos distintos.
-  \item \textbf{Map-reduce}: fan-out paralelo a varios nodos y join (LangGraph lo soporta).
-\end{itemize}
-
-\begin{tip}[title=LangGraph vs agent ``caja negra'']
-\texttt{create\_agent} (LangChain) oculta el bucle.
-Con LangGraph \textbf{ves y diseñas} el bucle: cuándo tools, cuándo parar, cuándo criticar, qué guardar en estado.
+\begin{tip}[title=LangGraph vs \texttt{create\_agent}]
+\texttt{create\_agent} oculta el bucle.
+LangGraph te deja \textbf{diseñar} cuándo tools, cuándo criticar, cuándo buscar web, qué guardar en estado.
 \end{tip}
 
 % =============================================================================
@@ -554,20 +742,22 @@ Con LangGraph \textbf{ves y diseñas} el bucle: cuándo tools, cuándo parar, cu
 % =============================================================================
 
 \begin{center}
-\begin{tabular}{@{}p{5.2cm}p{10cm}@{}}
+\begin{tabular}{@{}p{5.0cm}p{10.2cm}@{}}
 \toprule
 \textbf{Idea} & \textbf{Recuerda} \\
 \midrule
-Entrada al grafo & \texttt{\{"messages": [HumanMessage(...)]\}} \\
-Salida de nodo & \texttt{return \{"messages": [nuevo\_msg]\}} \\
-Fusión de mensajes & \texttt{add\_messages} (append / replace by id) \\
-Estado listo & \texttt{MessagesState} \\
+Crear grafo & \texttt{StateGraph(State)} $\to$ nodes $\to$ edges $\to$ \texttt{compile()} \\
+Entrada chat & \texttt{\{"messages": [HumanMessage(...)]\}} \\
+Entrada RAG & \texttt{\{"question": "..."\}} \\
+Salida de nodo & \texttt{return \{"campo": valor\}} (parcial) \\
+Historial seguro & \texttt{MessagesState} / \texttt{add\_messages} \\
 LLM + tools & \texttt{.bind\_tools(tools)} \\
 Ejecutar tools & \texttt{ToolNode(tools)} \\
-¿Seguir? & mira \texttt{state["messages"][-1].tool\_calls} \\
-Bucle reason$\leftrightarrow$act & conditional edge + edge fija de vuelta \\
-Prompt con historial & \texttt{MessagesPlaceholder("messages")} \\
-Parar & devolver / mapear a \texttt{END} \\
+¿Seguir (ReAct)? & \texttt{state["messages"][-1].tool\_calls} \\
+Schema forzado & \texttt{tool\_choice="Nombre"} o \texttt{with\_structured\_output} \\
+Historial en prompt & \texttt{MessagesPlaceholder("messages")} \\
+Parar & mapear a \texttt{END} \\
+Ver flujo & \texttt{get\_graph().draw\_mermaid\_png(...)} \\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -577,38 +767,81 @@ Parar & devolver / mapear a \texttt{END} \\
 \label{sec:pitfalls}
 % =============================================================================
 
-\begin{enumerate}[leftmargin=*,itemsep=3pt]
-  \item \textbf{``return messages = historial completo''}: innecesario (y peligroso) si usas \texttt{add\_messages}; devuelve solo lo nuevo.
-  \item \textbf{Olvidar el reducer}: sin \texttt{add\_messages}, pisas el historial.
-  \item \textbf{Confundir AIMessage.tool\_calls con ejecución}: pedir $\neq$ ejecutar.
-  \item \textbf{No volver al LLM tras ToolMessage}: el grafo debe regresar al nodo reason.
-  \item \textbf{Meter system prompt solo una vez en el estado}: a veces es mejor inyectarlo en el invoke del nodo (como en 01) y no ensuciar el historial persistente.
-  \item \textbf{Reflection sin criterio de parada}: bucle infinito generate$\leftrightarrow$reflect; usa contador o ``critique vacía / OK''.
+\begin{enumerate}[leftmargin=*,itemsep=2pt]
+  \item Devolver el historial completo a mano con \texttt{add\_messages}: innecesario; solo el mensaje nuevo.
+  \item Olvidar el reducer $\to$ pisas mensajes.
+  \item Confundir \texttt{tool\_calls} (pedir) con ejecutar.
+  \item No volver al LLM tras \texttt{ToolMessage}.
+  \item Reflection/Reflexion sin tope de iteraciones $\to$ bucle infinito.
+  \item ToolNode cuyo \texttt{name} no coincide con el del schema Pydantic.
+  \item Mezclar embedding distinto en ingest vs retrieve (04: \texttt{nomic-embed-text}).
+  \item Invocar 04 sin haber corrido \texttt{ingestion.py} (Chroma vacío).
+  \item Esperar \texttt{messages} en Agentic RAG: aquí el contrato es \texttt{question}/\texttt{generation}/\ldots
 \end{enumerate}
 
 % =============================================================================
-\section{Glosario rápido EN $\leftrightarrow$ ES}
+\section{Guía archivo por archivo}
+% =============================================================================
+
+\begin{longtable}{@{}p{5.6cm}p{9.6cm}@{}}
+\toprule
+\textbf{Archivo} & \textbf{Qué aprender} \\
+\midrule
+\endhead
+\texttt{01/.../react.py} & Tools + \texttt{bind\_tools} \\
+\texttt{01/.../nodes.py} & Nodo reason; \texttt{ToolNode} \\
+\texttt{01/.../main.py} & Grafo ReAct completo + router \\
+\texttt{02/.../chains.py} & Dos LCEL chains (generate/reflect) \\
+\texttt{02/.../main.py} & Estado custom + crítica como HumanMessage \\
+\texttt{03/.../schemas.py} & AnswerQuestion / ReviseAnswer / Reflection \\
+\texttt{03/.../chains.py} & \texttt{tool\_choice} + prompts actor/revisor \\
+\texttt{03/.../tool\_executor.py} & ToolNode + Tavily batch queries \\
+\texttt{03/.../main.py} & draft $\to$ tools $\to$ revise + event\_loop \\
+\texttt{04/.../ingestion.py} & Crawl URLs $\to$ Chroma \\
+\texttt{04/.../graph/state.py} & Estado por campos \\
+\texttt{04/.../graph/nodes/*} & retrieve / grade / web / generate \\
+\texttt{04/.../graph/chains/*} & router + graders + generation \\
+\texttt{04/.../graph/graph.py} & Wiring + conditional entry + self-correct \\
+\texttt{04/.../main.py} & \texttt{app.invoke(\{"question": ...\})} \\
+\bottomrule
+\end{longtable}
+
+% =============================================================================
+\section{Glosario}
 % =============================================================================
 
 \begin{center}
-\begin{tabular}{@{}ll@{}}
+\begin{tabular}{@{}p{4.2cm}p{11cm}@{}}
 \toprule
 \textbf{Término} & \textbf{En la práctica} \\
 \midrule
 State & Memoria compartida del grafo \\
-Node & Paso / función que actualiza estado \\
-Edge / conditional edge & Transición fija / con router \\
-Reducer & Política de merge del update \\
-Invoke & Ejecutar el grafo una vez \\
-Tool calling & El LLM pide funciones tipadas \\
+Node & Función que propone un update \\
+Edge / conditional & Transición fija / con router \\
+Reducer & Política de merge (\texttt{add\_messages}, overwrite\ldots) \\
+ToolNode & Ejecuta tool\_calls $\to$ ToolMessages \\
 ReAct & Bucle razonar--actuar \\
-Reflection & Bucle generar--criticar--revisar \\
-Checkpointer & Persistencia de estado entre pasos/runs \\
+Reflection & Generar--criticar--revisar (texto) \\
+Reflexion & Draft estructurado + search + revise \\
+Agentic RAG & RAG con routing, grading y reintentos \\
+Structured output & Pydantic vía tools o \texttt{with\_structured\_output} \\
+Checkpointer & Persistencia entre pasos/runs (avanzado; no en estos módulos) \\
 \bottomrule
 \end{tabular}
 \end{center}
 
 \vspace{1em}
-\noindent\textit{Compilar:} \texttt{pdflatex langgraph-resumen.tex} (dos veces si quieres el TOC estable).
+\begin{center}
+\fbox{\parbox{0.92\textwidth}{\centering
+\textbf{Frase resumen}\\[0.35em]
+\textit{Diseña el estado, escribe nodos que devuelven parches,}\\
+\textit{conecta aristas (condicionales cuando haya decisiones),}\\
+\textit{compila e invoca. El patrón (ReAct / Reflection / Reflexion / RAG)}\\
+\textit{solo cambia qué nodos y qué criterios de parada usas.}
+}}
+\end{center}
+
+\vspace{0.8em}
+\noindent\textit{Compilar:} \texttt{pdflatex langgraph-resumen.tex} (dos veces para TOC estable).
 
 \end{document}
