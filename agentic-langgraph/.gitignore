@@ -220,5 +220,5 @@ __marimo__/
 .streamlit/secrets.toml
 
 # TeX
-.tex
+*.tex
 04-agentic-rag/chroma/
