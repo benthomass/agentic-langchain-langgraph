@@ -1,4 +1,5 @@
 from typing import TypedDict
+from pathlib import Path
 from langgraph.graph import StateGraph, START, END
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.checkpoint.sqlite import SqliteSaver
@@ -29,15 +30,17 @@ builder.add_node("step_3", step_3)
 
 builder.add_edge(START, "step_1")
 builder.add_edge("step_1", "human_feedback")
-builder.add_edge("human_feedback", "step_3")
+builder.add_edge("human_feeck", "step_3")
 builder.add_edge("step_3", END)
 
-conn = sqlite3.connect(database="checkpoint.sqlite", check_same_thread=False)
+db_path = Path(__file__).parent.parent / "checkpoint.sqlite"
+graph_path = Path(__file__).parent.parent / "graph.png"
+conn = sqlite3.connect(database=str(db_path), check_same_thread=False)
 memory = SqliteSaver(conn)
 
 graph = builder.compile(checkpointer=memory, interrupt_before=["human_feedback"])
 
-graph.get_graph().draw_mermaid_png(output_file_path="graph.png")
+graph.get_graph().draw_mermaid_png(output_file_path=str(graph_path))
 
 
 if __name__ == "__main__":
